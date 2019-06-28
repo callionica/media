@@ -1,4 +1,3 @@
-// JXA
 "use strict";
 ObjC.import('Foundation');
 
@@ -87,6 +86,27 @@ var alert = function (text, informationalText) {
 
 ////////////////////////////////////////////////////////////////////
 
+function crunch(text) {
+	var nstext = ObjC.wrap(text); // NSString
+	var options = $.NSCaseInsensitiveSearch | $.NSDiacriticInsensitiveSearch | $.NSWidthInsensitiveSearch;
+	var locale = $.NSLocale.systemLocale;
+    var result = nstext.precomposedStringWithCompatibilityMapping.stringByFoldingWithOptionsLocale(options,  locale);
+    return ObjC.unwrap(result);
+}
+
+function url_crunch(text) {
+	var c1 = crunch(text);
+	c1 = c1.replace(/[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,.\/:;<=>?@\[\]^_`{|}~]/g, ""); // Remove punctuation except dashes
+	c1 = c1.replace(/å/g, "aa");
+	c1 = c1.replace(/ø|ö|œ/g, "oe");
+	c1 = c1.replace(/æ/g, "ae");
+	c1 = c1.replace(/[^a-z0-9]/g, "-");
+	c1 = c1.replace(/-{2,}/g, "-"); // Coalesce dashes
+	return c1;
+}
+
+////////////////////////////////////////////////////////////////////
+
 ObjC.import('AppKit');
 
 
@@ -152,12 +172,7 @@ function tag2lang(tag) {
 		}
 	});
 	
-	if (lang) {
-// 		console.log(lang);
-		return lang;
-	}
-	
-	return "en";
+	return lang || "en";
 }
 
 function get_media_groups(files) {
@@ -180,6 +195,13 @@ function get_media_groups(files) {
 		else {
 			file.category = "unknown";
 		}
+		
+		// The core name for a movie is its name without (HD) or (SD)
+		file.core_name = file.name.replace(/ \([HS]D\)$/gi, "");
+		
+		// The key for a movie is it's url-simplified core name (no HD, no extension)
+		// Show - 01-01 Ep1.mp4 and Show - 01-01 Ep1.m4v have the same key
+		file.key = url_crunch(file.core_name);
 		
 		// The container is the parent folder
 		file.container = file.parent;
@@ -243,6 +265,13 @@ function get_media_groups(files) {
 				
 				if (movie.episode_name == "") {
 					movie.episode_name = "Episode " + movie.episode;
+				} else {
+					var rxq = /^(.*) \(([HS]D)\)$/ig;
+					var mq = rxq.exec(movie.episode_name);
+					if (mq) {
+						movie.episode_name = mq[1];
+						movie.quality = mq[2];
+					}
 				}
 		}
 	
@@ -253,11 +282,12 @@ function get_media_groups(files) {
 	});
 	
 	var groups = movies.reduce(function(result, obj) {
-		var key = obj.container + "/" + obj.subcontainer;
-		var group = result[key] || { container: obj.container, subcontainer: obj.subcontainer, movies: [] };
+		var key = url_crunch(obj.container) + (obj.subcontainer ? ("/" + url_crunch(obj.subcontainer)) : "");
+		var group = result[key] || { key: key, container: obj.container, subcontainer: obj.subcontainer, movies: {} };
 		result[key] = group;
 		
-		group.movies = group.movies.concat(obj);
+		var movies = group.movies[obj.key] || [];
+		group.movies[obj.key] = movies.concat(obj);
 		
   		return result;
 	}, {});
@@ -266,7 +296,7 @@ function get_media_groups(files) {
 	
 	groups.forEach(group => {
 		/*
-		A group image has the same name as its folder or it is called "folder" or "poster"
+		A group image has the same name as its parent or it is called "folder" or "poster"
 		*/
 		function is_match(other) {
 			return other.container == group.container && other.subcontainer == group.subcontainer &&
@@ -279,7 +309,18 @@ function get_media_groups(files) {
 	return groups;
 }
 
-function main() {
+// Generate the page data
+function* get_pages(groups, destination) {
+	// Generate index page
+	
+	yield { location: "index.html" };
+	
+	for (var group of groups) {
+		yield { location: "x.html" };
+	}
+}
+
+function main() {	
 	var source = "/Volumes/disk/video";
 	var destination = "/Users/user/Documents/media-test/";
 	
@@ -288,6 +329,11 @@ function main() {
 		
 	var groups = get_media_groups(files);
 	write_file(destination + "groups.txt", JSON.stringify(groups, null, "    "));
+	
+	var pages = get_pages(groups, destination);
+	for (var page of pages) {
+	//	write_file(destination + page.location, JSON.stringify(page, null, "    "));
+	}
 }
 
 main();
