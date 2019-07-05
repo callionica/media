@@ -16,9 +16,19 @@ var create_directory = function (path) {
 
 // Read a UTF8 file at a given path and return a JS string
 var read_file = function (path) {
-  var contents = fm.contentsAtPath(path.toString()); // NSData
-  contents = $.NSString.alloc.initWithDataEncoding(contents, $.NSUTF8StringEncoding);
-  return ObjC.unwrap(contents);
+	if (path.startsWith("file:")) {
+		var url = $.NSURL.URLWithString(path);
+		path = url.path.js;
+	}
+	var data = fm.contentsAtPath(path.toString()); // NSData
+	var contents = $.NSString.alloc.initWithDataEncoding(data, $.NSUTF8StringEncoding);
+	if (contents.isNil()) {
+		contents = $.NSString.alloc.initWithDataEncoding(data, $.NSWindowsCP1252StringEncoding);
+	}
+	if (contents.isNil()) {
+		contents = $.NSString.alloc.initWithDataEncoding(data, $.NSMacOSRomanStringEncoding);
+	}
+	return ObjC.unwrap(contents);
 };
 
 // Write a UTF8 file at a given path given a JS string
@@ -59,13 +69,16 @@ function get_files(path) {
 	
 	return o.filter(url => !is_directory(url)).map(function (url) {
 		var path = url.pathComponents.js.map(c => c.js);
+		var type = get_type(url);
+		var mimetype = mimetype_from_type(type);
 		return {
 			url: url.absoluteString.js,
 			path: path,
 			parent: path[path.length - 2],
 			name: name_without_extension(url.lastPathComponent.js),
 			extension: url.pathExtension.js,
-			type: get_type(url)
+			type,
+			mimetype
 		};
 	});
 }
@@ -84,6 +97,26 @@ var alert = function (text, informationalText) {
   app.displayAlert(text, options);
 };
 
+/*console.log = function(argument) {
+    ObjC.import('Foundation');
+    for (argument of arguments) {
+        $.NSFileHandle.fileHandleWithStandardOutput.writeData($.NSString.alloc.initWithString(String(argument) + "\n").dataUsingEncoding($.NSNEXTSTEPStringEncoding));
+    }
+}
+*/
+console.log("test");
+
+// Now you can do array.sort(sort_by(x => x.prop));
+function sort_by(keyFn) {
+	return function sorter(a, b) {
+		var keyA = keyFn(a);
+		var keyB = keyFn(b);
+		if (keyA < keyB) return -1;
+		if (keyA > keyB) return  1;
+		return 0;
+	}
+}
+
 ////////////////////////////////////////////////////////////////////
 
 function crunch(text) {
@@ -95,13 +128,22 @@ function crunch(text) {
 }
 
 function url_crunch(text) {
+	// Lowercase and diacritic removal
 	var c1 = crunch(text);
-	c1 = c1.replace(/[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,.\/:;<=>?@\[\]^_`{|}~]/g, ""); // Remove punctuation except dashes
+	
+	// Remove punctuation except dashes & periods
+	c1 = c1.replace(/[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,\/:;<=>?@\[\]^_`{|}~]/g, "");
+	
+	// Convert northern european letters
 	c1 = c1.replace(/å/g, "aa");
 	c1 = c1.replace(/ø|ö|œ/g, "oe");
 	c1 = c1.replace(/æ/g, "ae");
+	
+	// Collapse to english 26 and digits
 	c1 = c1.replace(/[^a-z0-9]/g, "-");
+	
 	c1 = c1.replace(/-{2,}/g, "-"); // Coalesce dashes
+	
 	return c1;
 }
 
@@ -115,6 +157,10 @@ var workspace = $.NSWorkspace.sharedWorkspace;
 function extension_from_type(type) {
 	var result = ObjC.unwrap($.UTTypeCopyPreferredTagWithClass(type, $.kUTTagClassFilenameExtension));
 	return result;
+}
+
+function mimetype_from_type(type) {
+	return ObjC.unwrap($.UTTypeCopyPreferredTagWithClass(type, $.kUTTagClassMIMEType));
 }
 
 function is_movie(value) {
@@ -175,6 +221,10 @@ function tag2lang(tag) {
 	return lang || "en";
 }
 
+function container_key(obj) {
+	return url_crunch(obj.container) + (obj.subcontainer ? ("/" + url_crunch(obj.subcontainer)) : "");
+}
+
 function get_media_groups(files) {
 	files.forEach(file => {
 		if (is_movie(file)) {
@@ -196,12 +246,14 @@ function get_media_groups(files) {
 			file.category = "unknown";
 		}
 		
-		// The core name for a movie is its name without (HD) or (SD)
-		file.core_name = file.name.replace(/ \([HS]D\)$/gi, "");
-		
-		// The key for a movie is it's url-simplified core name (no HD, no extension)
-		// Show - 01-01 Ep1.mp4 and Show - 01-01 Ep1.m4v have the same key
-		file.key = url_crunch(file.core_name);
+		// The core name for a media file is its name without the quality suffix (HD) or (SD) etc
+		file.core_name = file.name;
+		var rxq = /^(.*) \(((1080p?)?\s*([HS]D)?)\)$/ig;
+		var mq = rxq.exec(file.name);
+		if (mq) {
+			file.core_name = mq[1];
+			file.quality = mq[2];
+		}
 		
 		// The container is the parent folder
 		file.container = file.parent;
@@ -214,6 +266,16 @@ function get_media_groups(files) {
 			file.subcontainer = file.parent;
 			file.season = parseInt(m[2], 10);
 		}
+
+		file.container_key = container_key(file);
+				
+		// The key for a movie is it's url-simplified core name (no HD, no extension)
+		// Show - 01-01 Ep1.mp4 and Show - 01-01 Ep1 (HD).m4v have the same key
+		file.key = url_crunch(file.core_name);
+
+		if (file.key.startsWith(file.container_key + "-")) {
+			file.key = file.key.substr(file.container_key.length + 1);
+		}
 	});
 	
 	var movies    = files.filter(file => file.category == "movie");
@@ -221,7 +283,7 @@ function get_media_groups(files) {
 	var images    = files.filter(file => file.category == "image");
 
 	movies.forEach(movie => {
-		var key = movie.name;
+		var key = movie.core_name;
 		var prefix = key + ".";
 		
 		function is_match(other) {
@@ -240,7 +302,7 @@ function get_media_groups(files) {
 		// "01.mp4" // Episode
 		
 		var rx = /^((.*) - )?(\d{1,4})(-(\d{1,4}))?\s*(.*)$/ig;
-		var m = rx.exec(movie.name);
+		var m = rx.exec(movie.core_name);
 		if (m) {
 				var t = m[2];
 				var a = m[3];
@@ -265,14 +327,13 @@ function get_media_groups(files) {
 				
 				if (movie.episode_name == "") {
 					movie.episode_name = "Episode " + movie.episode;
-				} else {
-					var rxq = /^(.*) \(([HS]D)\)$/ig;
-					var mq = rxq.exec(movie.episode_name);
-					if (mq) {
-						movie.episode_name = mq[1];
-						movie.quality = mq[2];
-					}
 				}
+				
+				// iTunes replaces characters like : and ? with _
+				// so to clean this up, replace underscores with spaces then clean up the extra spaces
+				movie.episode_name = movie.episode_name.replace(/_/g, " ");
+				movie.episode_name = movie.episode_name.replace(/\s{2,}/g, " ");
+				movie.episode_name = movie.episode_name.trim(); 
 		}
 	
 		movie.subtitles = subtitles.filter(is_match);
@@ -282,8 +343,9 @@ function get_media_groups(files) {
 	});
 	
 	var groups = movies.reduce(function(result, obj) {
-		var key = url_crunch(obj.container) + (obj.subcontainer ? ("/" + url_crunch(obj.subcontainer)) : "");
-		var group = result[key] || { key: key, container: obj.container, subcontainer: obj.subcontainer, movies: {} };
+		var key = obj.container_key;
+		var sort_key = key.replace(/^((the)|(an?))-(.*)$/, "$4-$1");
+		var group = result[key] || { key: key, sort_key, container: obj.container, subcontainer: obj.subcontainer, movies: {} };
 		result[key] = group;
 		
 		var movies = group.movies[obj.key] || [];
@@ -306,33 +368,269 @@ function get_media_groups(files) {
 		group.images = images.filter(is_match);
 	});
 	
+	groups = groups.sort(sort_by(group => group.sort_key));
+	
 	return groups;
+}
+
+function get_url_relative_to(url, base) {
+	var c1 = url.split("/");
+	var c2 = base.split("/");
+
+	var i = 0;
+	while (i < c1.length && i < c2.length && c1[i] == c2[i]) {
+		++i;
+	}
+	
+	var up = "../".repeat(c2.length - 1 - i);
+	var down = c1.slice(i).join("/");
+	
+	return up + down;
+}
+
+function get_movie_links(group, destination) {
+	var location = group.key + "/";
+	var full = $.NSURL.alloc.initFileURLWithPath(destination + location).absoluteString.js;
+
+	var lowest_season;
+	var highest_season;
+		
+	var current_show;
+	var multiple_shows = false;
+			
+	var movies = Object.values(group.movies).map(x => {
+		
+		return x.map(movie => {
+		
+			// Track lowest and highest season
+			if (movie.season) {
+				if (!lowest_season || (movie.season < lowest_season)) {
+					lowest_season = movie.season;
+				}
+				if (!highest_season || (movie.season > highest_season)) {
+					highest_season = movie.season;
+				}
+			}
+			
+			// Track multiple shows
+			if (movie.show) {
+				if (current_show && (current_show != movie.show)) {
+					multiple_shows = true;
+				}
+				current_show = movie.show;
+			}
+		
+			var name = movie.core_name;
+			if (movie.episode_name) {
+				name = movie.episode_name;
+				
+				if (movie.show && movie.container != movie.show && (movie.container != "Frost")) { // TODO
+					name = movie.show + " - " + name;
+				}
+			}
+		
+			var subtitles = movie.subtitles.map(sub => {
+				return {
+					link: get_url_relative_to(sub.url, full),
+					name: sub.tag || sub.lang,
+					lang: sub.lang,
+					tag: sub.tag
+				};
+			});
+			return { link: movie.key /*get_url_relative_to(movie.url, full)*/, name: name, season: movie.season, episode: movie.episode, quality: movie.quality, subtitles: subtitles };
+		});
+	});
+	
+	var display_season = (lowest_season != highest_season) || multiple_shows;
+	return {
+		location: location,
+		name: group.container + (group.subcontainer ? (" " + group.subcontainer) : ""),
+		display_season: display_season,
+		movies,
+		lowest_season, highest_season, multiple_shows };
+}
+
+function groups_page(p) {
+	var json = JSON.stringify(p, null, "    ");
+	var title = "Videos"
+	var groups = p.groups.map(group => `<div><a href="${group.link}">${group.container + (group.subcontainer ? (" " + group.subcontainer) : "")}</a></div>`).join("\n");
+	var html = 
+	`<html>
+	<head>
+	<title>${title}</title>
+	<script>${json}</script>
+	</head>
+	<body>
+	<h1>${title}</h1>
+	${groups}
+	</body>
+	</html>`;
+	
+	p.html = html;
+	return p;
+}
+
+function group_page(p) {
+	var json = JSON.stringify(p, null, "    ");
+	var title = p.name;
+	var display_season = p.display_season ? "inline" : "none";
+	var movies = p.movies.map(group => {
+		var movie = group[0];
+		return `<div><a href="${movie.link}"><span class="season">${movie.season || ""}</span><span class="episode">${movie.episode || ""}</span><span class="name">${movie.name}</span></a></div>`;
+		
+	}).join("\n");
+	var html = 
+	`<html>
+	<head>
+	<title>${title}</title>
+	<style>
+	.season { display: ${display_season}; margin: 8px; }
+	.episode { display: ${display_season}; margin: 8px; }
+	.name { margin: 8px; }
+	</style>
+	<script>${json}</script>
+	</head>
+	<body>
+	<h1>${title}</h1>
+	${movies}
+	</body>
+	</html>`;
+	
+	p.html = html;
+	return p;
+}
+
+function individual_page(p) {
+	var json = JSON.stringify(p, null, "    ");
+	var title = p.name;
+	var display_season = p.display_season ? "inline" : "none";
+	var movies = p.movies.map(group => {
+		var movie = group[0];
+		return `<div><a href="${movie.link}"><span class="season">${movie.season || ""}</span><span class="episode">${movie.episode || ""}</span><span class="name">${movie.name}</span></a></div>`;
+		
+	}).join("\n");
+	var html = 
+	`<html>
+	<head>
+	<title>${title}</title>
+	<style>
+	.season { display: ${display_season}; margin: 8px; }
+	.episode { display: ${display_season}; margin: 8px; }
+	.name { margin: 8px; }
+	</style>
+	<script>${json}</script>
+	</head>
+	<body>
+	<h1>${title}</h1>
+	${movies}
+	</body>
+	</html>`;
+	
+	p.html = html;
+	return p;
+}
+
+function html_source(vid, baseURL) {
+	return `<source src="${get_url_relative_to(vid.url, baseURL)}" type="${vid.mimetype}">`;
+}
+
+function html_subtitle(sub, index) {
+	var default_ = (index == 0) ? "default " : "";
+	return `<track kind="subtitles" ${default_}label="${sub.tag}" srclang="${sub.lang}" src="${sub.name + ".vtt"}">`;
+}
+
+function html_video(vids, baseURL) {
+	var vid = vids[0];
+	var image = vid.images[0];
+	var poster = image ? get_url_relative_to(image.url, baseURL) : "poster.jpg";
+	return "" +
+`<video controls poster="${poster}" width="720">
+	${vids.map(vid => html_source(vid, baseURL)).join("\n\t")}
+	${vid.subtitles.map((sub, index) => html_subtitle(sub, index)).join("\n\t")}
+</video>
+`;
+}
+
+function html_video_page(vids, baseURL) {
+	var vid = vids[0];
+	var episode_name = vid.episode_name || vid.core_name;
+	var show = vid.show || vid.container;
+	var location = vid.season ? ("S" + vid.season) : vid.subcontainer;
+	var locator = (location ? (location + " ") : "") + (vid.episode ? ("E" + vid.episode) : "");
+	return "" +
+`<!DOCTYPE html>
+<html>
+<head>
+<title>${episode_name} - ${show} ${locator}</title>
+</head>
+<body>
+<h1 class="episode_name">${episode_name}</h1>
+<h2><span class="show">${show}</span> <span class="locator">${locator}</span></h2>
+${html_video(vids, baseURL)}
+<body>
+</html>
+`;
+}
+
+function srt2vtt(subs) {
+	var cueTiming = /(\d{1,2}:\d{1,2}:\d{1,2})(,)(\d{1,3} --> \d{1,2}:\d{1,2}:\d{1,2})(,)(\d{1,3})/g;
+	
+	// Replace comma timings with period timings
+	var vtt = subs.replace(cueTiming, "$1.$3.$5");
+				
+	// Add WEBVTT header if not present
+	if (!vtt.startsWith("WEBVTT")) {
+		vtt = "WEBVTT\n\n" + vtt;
+	}
+	
+	return vtt;
 }
 
 // Generate the page data
 function* get_pages(groups, destination) {
 	// Generate index page
 	
-	yield { location: "index.html" };
+	yield groups_page({ location: "", groups: groups.map(group => {
+		return { link: group.key, container: group.container, subcontainer: group.subcontainer };
+		})
+	});
 	
 	for (var group of groups) {
-		yield { location: "x.html" };
+		var movies = get_movie_links(group, destination);
+		yield group_page(movies);
+		
+		var pages = Object.values(group.movies).map(movie_group => {
+			var movie = movie_group[0];
+			var location = (movie.container_key + "/" + movie.key + "/");
+			var full = $.NSURL.alloc.initFileURLWithPath(destination + location).absoluteString.js;
+			movie_group.forEach(movie => {
+				movie.subtitles.forEach(subtitle => {
+					var filename = destination + location + subtitle.name + ".vtt";
+					var subs = read_file(subtitle.url);
+					write_file(filename, srt2vtt(subs));
+				});
+			});
+			return { location, html: html_video_page(movie_group, full) };
+		});
+		
+		yield* pages;
 	}
 }
 
-function main() {	
+function main() {
 	var source = "/Volumes/disk/video";
 	var destination = "/Users/user/Documents/media-test/";
 	
 	var files = get_files(source);
 	write_file(destination +  "files.txt", JSON.stringify(files , null, "    "));
-		
+
 	var groups = get_media_groups(files);
 	write_file(destination + "groups.txt", JSON.stringify(groups, null, "    "));
 	
 	var pages = get_pages(groups, destination);
 	for (var page of pages) {
-	//	write_file(destination + page.location, JSON.stringify(page, null, "    "));
+		create_directory(destination + page.location);
+		write_file(destination + page.location + "index.html", page.html);
 	}
 }
 
