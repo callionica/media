@@ -97,15 +97,6 @@ var alert = function (text, informationalText) {
   app.displayAlert(text, options);
 };
 
-/*console.log = function(argument) {
-    ObjC.import('Foundation');
-    for (argument of arguments) {
-        $.NSFileHandle.fileHandleWithStandardOutput.writeData($.NSString.alloc.initWithString(String(argument) + "\n").dataUsingEncoding($.NSNEXTSTEPStringEncoding));
-    }
-}
-*/
-console.log("test");
-
 // Now you can do array.sort(sort_by(x => x.prop));
 function sort_by(keyFn) {
 	return function sorter(a, b) {
@@ -361,7 +352,7 @@ function get_media_groups(files) {
 		A group image has the same name as its parent or it is called "folder" or "poster"
 		*/
 		function is_match(other) {
-			return other.container == group.container && other.subcontainer == group.subcontainer &&
+			return other.container == group.container && ((other.subcontainer == undefined) || (other.subcontainer == group.subcontainer)) &&
 				((other.name == other.parent) || (other.name == "folder") || (other.name == "poster"));
 		}
 		
@@ -437,23 +428,29 @@ function get_movie_links(group, destination) {
 					tag: sub.tag
 				};
 			});
-			return { link: movie.key /*get_url_relative_to(movie.url, full)*/, name: name, season: movie.season, episode: movie.episode, quality: movie.quality, subtitles: subtitles };
+			return { link: movie.key, name: name, season: movie.season, episode: movie.episode, quality: movie.quality, subtitles: subtitles };
 		});
 	});
 	
-	var display_season = (lowest_season != highest_season) || multiple_shows;
+	var display_season = (lowest_season != highest_season) || multiple_shows || ((lowest_season != 1) && !group.subcontainer);
 	return {
 		location: location,
 		name: group.container + (group.subcontainer ? (" " + group.subcontainer) : ""),
 		display_season: display_season,
 		movies,
-		lowest_season, highest_season, multiple_shows };
+		images: group.images.map(image => { return { url: get_url_relative_to(image.url, full) }; }),
+		lowest_season, highest_season, multiple_shows
+	};
+}
+
+function idx_doc(url) {
+	return url + (!url.endsWith("/") ? "/": "") + "index.html";
 }
 
 function groups_page(p) {
 	var json = JSON.stringify(p, null, "    ");
 	var title = "Videos"
-	var groups = p.groups.map(group => `<div><a href="${group.link}">${group.container + (group.subcontainer ? (" " + group.subcontainer) : "")}</a></div>`).join("\n");
+	var groups = p.groups.map(group => `<div><a href="${idx_doc(group.link)}">${group.container + (group.subcontainer ? (" " + group.subcontainer) : "")}</a></div>`).join("\n");
 	var html = 
 	`<html>
 	<head>
@@ -471,12 +468,14 @@ function groups_page(p) {
 }
 
 function group_page(p) {
+	var sidebar_width = 156;
 	var json = JSON.stringify(p, null, "    ");
 	var title = p.name;
 	var display_season = p.display_season ? "inline" : "none";
+	var poster = p.images[0] ? p.images[0].url : "poster.jpg";
 	var movies = p.movies.map(group => {
 		var movie = group[0];
-		return `<div><a href="${movie.link}"><span class="season">${movie.season || ""}</span><span class="episode">${movie.episode || ""}</span><span class="name">${movie.name}</span></a></div>`;
+		return `<div><a href="${idx_doc(movie.link)}"><span class="season">${movie.season || ""}</span><span class="episode">${movie.episode || ""}</span><span class="name">${movie.name}</span></a></div>`;
 		
 	}).join("\n");
 	var html = 
@@ -492,37 +491,10 @@ function group_page(p) {
 	</head>
 	<body>
 	<h1>${title}</h1>
+	<div id="sidebar" style="width: ${sidebar_width}px; float: left;"><img width="${sidebar_width}" src=${poster}></div>
+	<div id="content" style="margin-left: ${sidebar_width + 8}px;">
 	${movies}
-	</body>
-	</html>`;
-	
-	p.html = html;
-	return p;
-}
-
-function individual_page(p) {
-	var json = JSON.stringify(p, null, "    ");
-	var title = p.name;
-	var display_season = p.display_season ? "inline" : "none";
-	var movies = p.movies.map(group => {
-		var movie = group[0];
-		return `<div><a href="${movie.link}"><span class="season">${movie.season || ""}</span><span class="episode">${movie.episode || ""}</span><span class="name">${movie.name}</span></a></div>`;
-		
-	}).join("\n");
-	var html = 
-	`<html>
-	<head>
-	<title>${title}</title>
-	<style>
-	.season { display: ${display_season}; margin: 8px; }
-	.episode { display: ${display_season}; margin: 8px; }
-	.name { margin: 8px; }
-	</style>
-	<script>${json}</script>
-	</head>
-	<body>
-	<h1>${title}</h1>
-	${movies}
+	</div>
 	</body>
 	</html>`;
 	
@@ -539,24 +511,31 @@ function html_subtitle(sub, index) {
 	return `<track kind="subtitles" ${default_}label="${sub.tag}" srclang="${sub.lang}" src="${sub.name + ".vtt"}">`;
 }
 
-function html_video(vids, baseURL) {
+function html_video(vids, fallbackPoster, baseURL) {
 	var vid = vids[0];
 	var image = vid.images[0];
-	var poster = image ? get_url_relative_to(image.url, baseURL) : "poster.jpg";
+	var fb = fallbackPoster ? get_url_relative_to(fallbackPoster.url, baseURL) : "poster.jpg";
+	var poster = image ? get_url_relative_to(image.url, baseURL) : (fb);
 	return "" +
-`<video controls poster="${poster}" width="720">
+`<video controls poster="${poster}" width="854" height="480">
 	${vids.map(vid => html_source(vid, baseURL)).join("\n\t")}
 	${vid.subtitles.map((sub, index) => html_subtitle(sub, index)).join("\n\t")}
 </video>
 `;
 }
 
-function html_video_page(vids, baseURL) {
+function html_video_page(vids, poster, baseURL) {
 	var vid = vids[0];
 	var episode_name = vid.episode_name || vid.core_name;
 	var show = vid.show || vid.container;
-	var location = vid.season ? ("S" + vid.season) : vid.subcontainer;
+	var location = vid.season ? (vid.season != 1 ? "S" + vid.season : "") : vid.subcontainer;
 	var locator = (location ? (location + " ") : "") + (vid.episode ? ("E" + vid.episode) : "");
+	if (vid.season == 1 && vid.episode == 1) {
+		locator = "";
+	}
+	if (show == episode_name) {
+		show = "";
+	}
 	return "" +
 `<!DOCTYPE html>
 <html>
@@ -566,7 +545,7 @@ function html_video_page(vids, baseURL) {
 <body>
 <h1 class="episode_name">${episode_name}</h1>
 <h2><span class="show">${show}</span> <span class="locator">${locator}</span></h2>
-${html_video(vids, baseURL)}
+${html_video(vids, poster, baseURL)}
 <body>
 </html>
 `;
@@ -591,6 +570,12 @@ function* get_pages(groups, destination) {
 	// Generate index page
 	
 	yield groups_page({ location: "", groups: groups.map(group => {
+		var movie_groups = Object.values(group.movies);
+		if (movie_groups.length == 1) {
+			var movie = movie_groups[0][0];
+			var location = (movie.container_key + "/" + movie.key + "/");
+			return { link: location, container: movie.container };
+		}
 		return { link: group.key, container: group.container, subcontainer: group.subcontainer };
 		})
 	});
@@ -599,10 +584,12 @@ function* get_pages(groups, destination) {
 		var movies = get_movie_links(group, destination);
 		yield group_page(movies);
 		
+		var poster = group.images[0];
 		var pages = Object.values(group.movies).map(movie_group => {
 			var movie = movie_group[0];
 			var location = (movie.container_key + "/" + movie.key + "/");
 			var full = $.NSURL.alloc.initFileURLWithPath(destination + location).absoluteString.js;
+			
 			movie_group.forEach(movie => {
 				movie.subtitles.forEach(subtitle => {
 					var filename = destination + location + subtitle.name + ".vtt";
@@ -610,7 +597,8 @@ function* get_pages(groups, destination) {
 					write_file(filename, srt2vtt(subs));
 				});
 			});
-			return { location, html: html_video_page(movie_group, full) };
+			
+			return { location, html: html_video_page(movie_group, poster, full) };
 		});
 		
 		yield* pages;
