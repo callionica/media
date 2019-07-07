@@ -338,7 +338,7 @@ function get_media_groups(files) {
 		movie.subtitles.forEach(tag);
 		movie.images = images.filter(is_image_match);
 		movie.images.forEach(tag);
-		movie.images = movie.images.sort(sort_by(image => image.name.length));
+		movie.images = movie.images.sort(sort_by(image => -image.name.length));
 		
 	});
 	
@@ -550,6 +550,7 @@ function html_video_page(vids, poster, baseURL) {
 <html>
 <head>
 <title>${episode_name} - ${show} ${locator}</title>
+<script src="../../script.js"></script>
 </head>
 <body>
 <h1 class="episode_name">${episode_name}</h1>
