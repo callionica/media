@@ -27,21 +27,42 @@ function togglePlay(video) {
 	}
 }
 
-function toggleSubtitle(video) {
-	var tracks = video.textTracks;
+function cycleSubtitle(video) {
+	var tracks = [...video.textTracks].filter(track => track.kind === "subtitles");
+	var wasOn = false;
 	for (var index = 0; index < tracks.length; ++index) {
 		var track = tracks[index];
 		if (track.mode == "showing") {
 			track.mode = "disabled";
+			wasOn = true;
+		} else if (wasOn) {
+			track.mode = "showing";
 			return;
 		}
 	}
 	
-	{
+	if (!wasOn) {
 		var track = tracks[0];
 		if (track) {
 			track.mode = "showing";
 		}
+	}
+}
+
+function toggleFullscreen(video) {
+	if (document.webkitFullscreenElement) {
+		document.webkitExitFullscreen();
+	} else {
+		video.webkitRequestFullscreen();
+	}
+}
+
+function togglePIP(video) {
+	if (video.webkitPresentationMode === "picture-in-picture") {
+		video.webkitSetPresentationMode("inline");
+	} else {
+		document.webkitExitFullscreen();
+		video.webkitSetPresentationMode("picture-in-picture");
 	}
 }
 
@@ -55,7 +76,13 @@ function init() {
 			if (!evt.getModifierState("Shift")) {
 				togglePlay(video);
 			} else {   
-				toggleSubtitle(video);			
+				cycleSubtitle(video);			
+			}
+		} else if (evt.keyCode == 13) { // ENTER
+			if (!evt.getModifierState("Shift")) {
+				toggleFullscreen(video);
+			} else {
+				togglePIP(video);
 			}
 		}
 	};
