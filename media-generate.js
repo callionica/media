@@ -274,18 +274,7 @@ function get_media_groups(files) {
 	var images    = files.filter(file => file.category == "image");
 
 	movies.forEach(movie => {
-		var key = movie.core_name;
-		var prefix = key + ".";
-		
-		function is_match(other) {
-			return other.parent == movie.parent && (other.name == key || other.name.startsWith(prefix))
-		}
-		
-		function tag(other) {
-			other.tag = other.name.substr(prefix.length);
-			other.lang = tag2lang(other.tag);
-		}
-			
+
 		// File names can be:
 		// "TV Show - 01-01 Episode.mp4" // Show Season Episode Name
 		// "01-01 Episode.mp4" // Season Episode Name
@@ -327,10 +316,30 @@ function get_media_groups(files) {
 				movie.episode_name = movie.episode_name.trim(); 
 		}
 	
+		var key = movie.core_name;
+		var prefix = key + ".";
+		
+		function is_match(other) {
+			return other.parent == movie.parent && (other.name == key || other.name.startsWith(prefix))
+		}
+		
+		function is_image_match(other) {
+		// An image in the same folder with the "same" name or a name that matches the show
+		// (when the movie is not in the show container) 
+			return (other.parent == movie.parent) && (other.name == key || other.name.startsWith(prefix) || ((other.name == movie.show) && (other.container != movie.show)))
+		}
+		
+		function tag(other) {
+			other.tag = other.name.substr(prefix.length);
+			other.lang = tag2lang(other.tag);
+		}
+		
 		movie.subtitles = subtitles.filter(is_match);
 		movie.subtitles.forEach(tag);
-		movie.images = images.filter(is_match);
+		movie.images = images.filter(is_image_match);
 		movie.images.forEach(tag);
+		movie.images = movie.images.sort(sort_by(image => image.name.length));
+		
 	});
 	
 	var groups = movies.reduce(function(result, obj) {
@@ -415,7 +424,7 @@ function get_movie_links(group, destination) {
 			if (movie.episode_name) {
 				name = movie.episode_name;
 				
-				if (movie.show && movie.container != movie.show && (movie.container != "Frost")) { // TODO
+				if (movie.show && !((movie.container == movie.show) || ("The " + movie.container == movie.show)) && (movie.container != "Frost")) { // TODO
 					name = movie.show + " - " + name;
 				}
 			}
@@ -471,7 +480,7 @@ function group_page(p) {
 	var sidebar_width = 156;
 	var json = JSON.stringify(p, null, "    ");
 	var title = p.name;
-	var display_season = p.display_season ? "inline" : "none";
+	var display_season = p.display_season ? "inline-block" : "none";
 	var poster = p.images[0] ? p.images[0].url : "poster.jpg";
 	var movies = p.movies.map(group => {
 		var movie = group[0];
@@ -483,8 +492,8 @@ function group_page(p) {
 	<head>
 	<title>${title}</title>
 	<style>
-	.season { display: ${display_season}; margin: 8px; }
-	.episode { display: ${display_season}; margin: 8px; }
+	.season { display: ${display_season}; margin: 8px; width: 16px; }
+	.episode { display: ${display_season}; margin: 8px; width: 16px; }
 	.name { margin: 8px; }
 	</style>
 	<script>${json}</script>
@@ -607,7 +616,7 @@ function* get_pages(groups, destination) {
 
 function main() {
 	var source = "/Volumes/disk/video";
-	var destination = "/Users/user/Documents/media-test/";
+	var destination = "/Volumes/disk/media-test/";
 	
 	var files = get_files(source);
 	write_file(destination +  "files.txt", JSON.stringify(files , null, "    "));
