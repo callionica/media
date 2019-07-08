@@ -49,20 +49,69 @@ function cycleSubtitle(video) {
 	}
 }
 
-function toggleFullscreen(video) {
-	if (document.webkitFullscreenElement) {
+function exitFullscreen() {
+	if (document.exitFullscreen) {
+		document.exitFullscreen();
+	} else if (document.webkitExitFullscreen) {
 		document.webkitExitFullscreen();
-	} else {
+	}
+}
+
+function requestFullscreen(video) {
+	if (video.requestFullscreen) {
+		video.requestFullscreen();
+	} else if (video.webkitRequestFullscreen) {
 		video.webkitRequestFullscreen();
 	}
 }
 
-function togglePIP(video) {
-	if (video.webkitPresentationMode === "picture-in-picture") {
+function fullscreenElement() {
+	return document.fullscreenElement || document.webkitFullscreenElement;
+}
+
+function exitPictureInPicture(video) {
+	if (document.exitPictureInPicture) {
+		document.exitPictureInPicture();
+	} else if (document.webkitExitPictureInPicture) {
+		document.webkitExitPictureInPicture();
+	} else if (video.webkitSetPresentationMode) {
 		video.webkitSetPresentationMode("inline");
-	} else {
-		document.webkitExitFullscreen();
+	}
+}
+
+function requestPictureInPicture(video) {
+	if (video.requestPictureInPicture) {
+		video.requestPictureInPicture();
+	} else if (video.webkitRequestPictureInPicture) {
+		video.webkitRequestPictureInPicture();
+	} else if (video.webkitSetPresentationMode) {
 		video.webkitSetPresentationMode("picture-in-picture");
+	}
+}
+
+function isPictureInPicture(video) {
+	var element = document.pictureInPictureElement;
+	if (element === video) {
+		return true;
+	}
+	return (video.webkitPresentationMode === "picture-in-picture");
+}
+
+function toggleFullscreen(video) {
+	if (fullscreenElement()) {
+		exitFullscreen();
+	} else {
+		exitPictureInPicture(video);
+		requestFullscreen(video);
+	}
+}
+
+function togglePIP(video) {
+	if (isPictureInPicture(video)) {
+		exitPictureInPicture(video);
+	} else {
+		exitFullscreen();
+		requestPictureInPicture(video);
 	}
 }
 
@@ -71,6 +120,8 @@ function init() {
 	
 	document.onkeydown = function onkeydown(evt) {
 		evt = evt || window.event;
+		var handled = false;
+		
 		// console.log(evt);
 		if (evt.keyCode == 32) { // SPACE
 			if (!evt.getModifierState("Shift")) {
@@ -78,12 +129,19 @@ function init() {
 			} else {   
 				cycleSubtitle(video);			
 			}
+			handled = true;
 		} else if (evt.keyCode == 13) { // ENTER
 			if (!evt.getModifierState("Shift")) {
 				toggleFullscreen(video);
 			} else {
 				togglePIP(video);
 			}
+			handled = true;
+		}
+		
+		if (handled) {
+			evt.stopPropagation();
+			evt.preventDefault();
 		}
 	};
 }
