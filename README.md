@@ -4,6 +4,10 @@
 
 A JXA javascript for Mac OS X that recurses through a folder gathering info for movie files and associates them with matching images and external subtitles in SRT, VTT, WEBVTT formats. The code lightly parses the directory structure and filenames to identify Show, Season Number, Episode Number, and Episode Title to produce objects or JSON describing the movies. 
 
+# script.js
+
+A script to be loaded in an HTML page that adds keyboard control to the first `<video>` that it finds. SPACE: Play/Pause; SHIFT+SPACE: Cycle through subtitles; ENTER: Toggle Fullscreen; SHIFT+ENTER: Toggle PIP.
+
 # SRTVTTGather.js
 
 If you:
