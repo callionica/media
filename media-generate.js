@@ -70,9 +70,15 @@ function get_files(path) {
 	return o.filter(url => !is_directory(url)).map(function (url) {
 		var path = url.pathComponents.js.map(c => c.js);
 		var type = get_type(url);
+		var linkTo;
+		if (type == "public.symlink") {
+			linkTo = url.URLByResolvingSymlinksInPath;
+			type = get_type(linkTo);
+		}
 		var mimetype = mimetype_from_type(type);
 		return {
 			url: url.absoluteString.js,
+			linkTo: linkTo ? linkTo.absoluteString.js : undefined,
 			path: path,
 			parent: path[path.length - 2],
 			name: name_without_extension(url.lastPathComponent.js),
