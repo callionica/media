@@ -1,6 +1,6 @@
 "use strict";
 
-function ready(callback){
+function ready(callback) {
 	// in case the document is already rendered
 	if (document.readyState != 'loading') {
 		callback();
@@ -115,6 +115,7 @@ function togglePIP(video) {
 	}
 }
 
+
 function init() {
 	var video = document.querySelector("video");
 	
@@ -127,7 +128,7 @@ function init() {
 			if (!evt.getModifierState("Shift")) {
 				togglePlay(video);
 			} else {   
-				cycleSubtitle(video);			
+				cycleSubtitle(video);
 			}
 			handled = true;
 		} else if (evt.keyCode == 13) { // ENTER
@@ -136,6 +137,15 @@ function init() {
 			} else {
 				togglePIP(video);
 			}
+			handled = true;
+		} else if (evt.key === "ArrowRight") {
+			video.currentTime += 30.0;
+			handled = true;
+		} else if (evt.key === "ArrowLeft") {
+			video.currentTime -= 15.0;
+			handled = true;
+		} else if (evt.key === "ClosedCaptionToggle") {
+			cycleSubtitle(video);
 			handled = true;
 		}
 		
