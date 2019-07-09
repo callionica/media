@@ -470,7 +470,7 @@ function groups_page(p) {
 	`<html>
 	<head>
 	<title>${title}</title>
-	<script>${json}</script>
+	<script type="application/json">${json}</script>
 	</head>
 	<body>
 	<h1>${title}</h1>
@@ -502,7 +502,7 @@ function group_page(p) {
 	.episode { display: ${display_season}; margin: 8px; width: 16px; }
 	.name { margin: 8px; }
 	</style>
-	<script>${json}</script>
+	<script type="application/json">${json}</script>
 	</head>
 	<body>
 	<h1>${title}</h1>
@@ -610,6 +610,7 @@ function* get_pages(groups, destination) {
 				movie.subtitles.forEach(subtitle => {
 					var filename = destination + location + subtitle.name + ".vtt";
 					var subs = read_file(subtitle.url);
+					create_directory(destination + location);
 					write_file(filename, srt2vtt(subs));
 				});
 			});
@@ -622,8 +623,13 @@ function* get_pages(groups, destination) {
 }
 
 function main() {
-	var source = "/Volumes/disk/video";
+	var source = "/Volumes/disk/video/";
 	var destination = "/Volumes/disk/media-test/";
+	
+	create_directory(destination);
+	
+	var script = read_file(path + "script.js");
+	write_file(destination + "script.js", script);
 	
 	var files = get_files(source);
 	write_file(destination +  "files.txt", JSON.stringify(files , null, "    "));
