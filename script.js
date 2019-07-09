@@ -123,29 +123,61 @@ function init() {
 		return;
 	}
 	
+	var params = new URLSearchParams(document.location.search);
+	
 	// Persistence ID does not include hash or search parts of the URL
 	var pid = document.location.origin + document.location.pathname;
+	if (pid.endsWith("/index.html")) {
+		pid = pid.substr(0, pid.length - "/index.html".length);
+	}
+	if (!pid.endsWith("/")) {
+		pid = pid + "/";
+	}
+
+	var currentTime;
 	
-	// Read the video position from local storage
-	var currentTime = localStorage.getItem(pid + "/currentTime");
-	if (currentTime) {
-		currentTime = parseFloat(currentTime);
-		if (currentTime) {
-			var isInitialTimeSet = false;
-			function setInitialTime(event) {
-				if (!isInitialTimeSet) {
-					video.currentTime = currentTime;
-					isInitialTimeSet = true;
-				}
-			}
-			video.addEventListener('canplay', setInitialTime);
-			video.addEventListener('canplaythrough', setInitialTime);
+	// Get the start position from the URL search params if provided
+	var timeFromURL = params.get('t');
+	if (timeFromURL) {
+		var m = timeFromURL.match(/^(\d+)m(\d+)s?$/i);
+		if (m) {
+			var minutes = parseFloat(m[1]);
+			var seconds = parseFloat(m[2]);
+			currentTime = minutes * 60.0 + seconds;
 		}
 	}
 	
+	// Read the video position from local storage if URL didn't specify a time
+	if (!currentTime) {
+		var ct = localStorage.getItem(pid + "currentTime");
+		if (ct) {
+			currentTime = parseFloat(ct);
+		}
+	}
+	
+	if (currentTime) {
+		var isInitialTimeSet = false;
+		function setInitialTime(event) {
+			if (!isInitialTimeSet) {
+				video.currentTime = currentTime;
+				isInitialTimeSet = true;
+			}
+		}
+		video.addEventListener('canplay', setInitialTime);
+		video.addEventListener('canplaythrough', setInitialTime);
+	}
+	
+	var p = document.location.pathname.split("/");
+	var parentPID = document.location.origin + p.slice(0, p.length - 2).join("/") + "/";
+
+	// Notify the parent that a new item is being played
+	video.addEventListener('play', (event) => {
+	  localStorage.setItem(parentPID + "latest", JSON.stringify({ href: document.location.href, date: new Date() }));
+	});
+		
 	// Write the video position to local storage
 	video.addEventListener('timeupdate', (event) => {
-	  localStorage.setItem(pid + "/currentTime", video.currentTime);
+	  localStorage.setItem(pid + "currentTime", video.currentTime);
 	});
 	
 	document.onkeydown = function onkeydown(evt) {
@@ -171,7 +203,11 @@ function init() {
 			video.currentTime += 30.0;
 			handled = true;
 		} else if (evt.key === "ArrowLeft") {
-			video.currentTime -= 15.0;
+			if (!evt.getModifierState("Shift")) {
+				video.currentTime -= 15.0;
+			} else {
+				video.currentTime = 0.0;
+			}
 			handled = true;
 		} else if (evt.key === "ClosedCaptionToggle") {
 			cycleSubtitle(video);
