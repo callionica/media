@@ -119,6 +119,35 @@ function togglePIP(video) {
 function init() {
 	var video = document.querySelector("video");
 	
+	if (!video) {
+		return;
+	}
+	
+	// Persistence ID does not include hash or search parts of the URL
+	var pid = document.location.origin + document.location.pathname;
+	
+	// Read the video position from local storage
+	var currentTime = localStorage.getItem(pid + "/currentTime");
+	if (currentTime) {
+		currentTime = parseFloat(currentTime);
+		if (currentTime) {
+			var isInitialTimeSet = false;
+			function setInitialTime(event) {
+				if (!isInitialTimeSet) {
+					video.currentTime = currentTime;
+					isInitialTimeSet = true;
+				}
+			}
+			video.addEventListener('canplay', setInitialTime);
+			video.addEventListener('canplaythrough', setInitialTime);
+		}
+	}
+	
+	// Write the video position to local storage
+	video.addEventListener('timeupdate', (event) => {
+	  localStorage.setItem(pid + "/currentTime", video.currentTime);
+	});
+	
 	document.onkeydown = function onkeydown(evt) {
 		evt = evt || window.event;
 		var handled = false;
