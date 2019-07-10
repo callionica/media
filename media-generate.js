@@ -450,6 +450,8 @@ function get_movie_links(group, destination) {
 	var display_season = (lowest_season != highest_season) || multiple_shows || ((lowest_season != 1) && !group.subcontainer);
 	return {
 		location: location,
+		container: group.container,
+		subcontainer: group.subcontainer,
 		name: group.container + (group.subcontainer ? (" " + group.subcontainer) : ""),
 		display_season: display_season,
 		movies,
@@ -493,15 +495,20 @@ function group_page(p) {
 		return `<div><a href="${idx_doc(movie.link)}"><span class="season">${movie.season || ""}</span><span class="episode">${movie.episode || ""}</span><span class="name">${movie.name}</span></a></div>`;
 		
 	}).join("\n");
+	var dots = p.subcontainer ? "../.." : ".."
 	var html = 
 	`<html>
 	<head>
 	<title>${title}</title>
 	<style>
+	 a { text-decoration: none; color: black; }
 	.season { display: ${display_season}; margin: 8px; width: 16px; }
 	.episode { display: ${display_season}; margin: 8px; width: 16px; }
 	.name { margin: 8px; }
+	.latest { color: black; }
+	.latest::after { content: " ←"; }
 	</style>
+	<script src="${dots}/container-script.js"></script>
 	<script type="application/json">${json}</script>
 	</head>
 	<body>
@@ -551,12 +558,13 @@ function html_video_page(vids, poster, baseURL) {
 	if (show == episode_name) {
 		show = "";
 	}
+	var dots = vid.subcontainer ? "../../.." : "../.."
 	return "" +
 `<!DOCTYPE html>
 <html>
 <head>
 <title>${episode_name} - ${show} ${locator}</title>
-<script src="../../script.js"></script>
+<script src="${dots}/script.js"></script>
 </head>
 <body>
 <h1 class="episode_name">${episode_name}</h1>
@@ -630,6 +638,9 @@ function main() {
 	
 	var script = read_file(path + "script.js");
 	write_file(destination + "script.js", script);
+	
+	var container_script = read_file(path + "container-script.js");
+	write_file(destination + "container-script.js", container_script);
 	
 	var files = get_files(source);
 	write_file(destination +  "files.txt", JSON.stringify(files , null, "    "));
