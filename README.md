@@ -17,6 +17,7 @@ ARROWRIGHT: forward 30s
 
 The `currentTime` of the `video` is stored in localStorage using the page address as the key (origin + path only, excluding hash and search).
 
+The current time of the video can be set using a query string like ?t=32m14s or a hash like #t=32m14s.
 
 # SRTVTTGather.js
 
