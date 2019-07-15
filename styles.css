@@ -1,0 +1,38 @@
+html {
+    box-sizing: border-box;
+}
+*, *:before, *:after {
+    box-sizing: inherit;
+}
+
+h1 {
+    font-size: 32pt;
+}
+html {
+    color: rgb(2, 52, 116); /*text-color*/
+    background: rgb(249, 248, 245); /*paper*/
+    font-family: "Gill Sans", "San Francisco";
+    font-size: 24pt;
+}
+a {
+    color: inherit;
+    text-decoration: none;
+}
+#sidebar {
+    position: fixed;
+}
+.season {
+    display: var(--display-season, inline-block);
+    margin: 8px;
+    padding: 0;
+    width: 24pt;
+}
+.episode {
+    display: var(--display-season, inline-block);
+    margin: 8px;
+    padding: 0;
+    width: 24pt;
+}
+.name { margin: 8px; }
+.latest { color: black; }
+.latest::after { content: " ←"; }
