@@ -115,6 +115,18 @@ function togglePIP(video) {
 	}
 }
 
+// Persistence ID does not include hash or search parts of the URL
+function getPID() {
+	var pid = document.location.pathname;
+	
+	if (pid.endsWith("/index.html")) {
+		pid = pid.substr(0, pid.length - "index.html".length);
+	}
+	if (!pid.endsWith("/")) {
+		pid = pid + "/";
+	}
+	return pid;
+}
 
 function init() {
 	var video = document.querySelector("video");
@@ -124,15 +136,8 @@ function init() {
 	}
 	
 	var params = new URLSearchParams(document.location.search);
-	
-	// Persistence ID does not include hash or search parts of the URL
-	var pid = document.location.origin + document.location.pathname;
-	if (pid.endsWith("/index.html")) {
-		pid = pid.substr(0, pid.length - "/index.html".length);
-	}
-	if (!pid.endsWith("/")) {
-		pid = pid + "/";
-	}
+
+	var pid = getPID();
 
 	var currentTime;
 	
@@ -140,6 +145,16 @@ function init() {
 	var timeFromURL = params.get('t');
 	if (timeFromURL) {
 		var m = timeFromURL.match(/^(\d+)m(\d+)s?$/i);
+		if (m) {
+			var minutes = parseFloat(m[1]);
+			var seconds = parseFloat(m[2]);
+			currentTime = minutes * 60.0 + seconds;
+		}
+	}
+
+	// Get the start position from the URL bookmark if provided
+	{
+		var m = document.location.hash.match(/^#t=(\d+)m(\d+)s?$/i);
 		if (m) {
 			var minutes = parseFloat(m[1]);
 			var seconds = parseFloat(m[2]);
@@ -168,11 +183,11 @@ function init() {
 	}
 	
 	var p = document.location.pathname.split("/");
-	var parentPID = document.location.origin + p.slice(0, p.length - 2).join("/") + "/";
+	var parentPID = p.slice(0, p.length - 2).join("/") + "/";
 
 	// Notify the parent that a new item is being played
 	video.addEventListener('play', (event) => {
-	  localStorage.setItem(parentPID + "latest", JSON.stringify({ href: document.location.href, date: new Date() }));
+	  localStorage.setItem(parentPID + "latest", JSON.stringify({ title: document.title, href: document.location.href, date: new Date() }));
 	});
 		
 	// Write the video position to local storage
@@ -219,6 +234,18 @@ function init() {
 			evt.preventDefault();
 		}
 	};
+
+	function onhashchange() {
+		var m = document.location.hash.match(/^#t=(\d+)m(\d+)s?$/i);
+		if (m) {
+			var minutes = parseFloat(m[1]);
+			var seconds = parseFloat(m[2]);
+			var currentTime = minutes * 60.0 + seconds;
+			video.currentTime = currentTime;
+		}
+	}
+
+	window.addEventListener('hashchange', onhashchange, false);
 }
 
 ready(init);
