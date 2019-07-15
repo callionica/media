@@ -472,6 +472,8 @@ function groups_page(p) {
 	`<html>
 	<head>
 	<title>${title}</title>
+	<link rel="stylesheet" type="text/css" href="styles.css">
+	<script src="container-script.js"></script>
 	<script type="application/json">${json}</script>
 	</head>
 	<body>
@@ -500,13 +502,11 @@ function group_page(p) {
 	`<html>
 	<head>
 	<title>${title}</title>
+	<link rel="stylesheet" type="text/css" href="${dots}/styles.css">
 	<style>
-	 a { text-decoration: none; color: black; }
-	.season { display: ${display_season}; margin: 8px; width: 16px; }
-	.episode { display: ${display_season}; margin: 8px; width: 16px; }
-	.name { margin: 8px; }
-	.latest { color: black; }
-	.latest::after { content: " ←"; }
+	:root {
+    --display-season: ${display_season};
+	}
 	</style>
 	<script src="${dots}/container-script.js"></script>
 	<script type="application/json">${json}</script>
@@ -564,6 +564,7 @@ function html_video_page(vids, poster, baseURL) {
 <html>
 <head>
 <title>${episode_name} - ${show} ${locator}</title>
+<link rel="stylesheet" type="text/css" href="${dots}/styles.css">
 <script src="${dots}/script.js"></script>
 </head>
 <body>
@@ -636,11 +637,12 @@ function main() {
 	
 	create_directory(destination);
 	
-	var script = read_file(path + "script.js");
-	write_file(destination + "script.js", script);
+	var sources = ["styles.css", "script.js", "container-script.js"];
 	
-	var container_script = read_file(path + "container-script.js");
-	write_file(destination + "container-script.js", container_script);
+	sources.forEach(source => {
+		var content = read_file(path + source);
+		write_file(destination + source, content);
+	});
 	
 	var files = get_files(source);
 	write_file(destination +  "files.txt", JSON.stringify(files , null, "    "));
