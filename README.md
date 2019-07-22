@@ -19,6 +19,10 @@ The `currentTime` of the `video` is stored in localStorage using the page addres
 
 The current time of the video can be set using a query string like ?t=32m14s or a hash like #t=32m14s.
 
+# container-script.js
+
+A script to be loaded in an HTML page that adds keyboard control for navigating between `<a>` links using the up and down arrow keys. It also looks in localStorage to see which of the `<a>` links was most recently active (where "active" is defined by some other page that writes to localStorage).
+
 # SRTVTTGather.js
 
 If you:
