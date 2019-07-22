@@ -272,6 +272,11 @@ function get_media_groups(files) {
 
 		if (file.key.startsWith(file.container_key + "-")) {
 			file.key = file.key.substr(file.container_key.length + 1);
+		} else {
+			var ck = url_crunch(file.container);
+			if (file.key.startsWith(ck + "-")) {
+				file.key = file.key.substr(ck.length + 1);
+			}
 		}
 	});
 	
@@ -304,15 +309,19 @@ function get_media_groups(files) {
 					a = null;
 				}
 				
-				movie.show = t;
+				movie.show = t.trim();
 				if (a != null) {
 					movie.season = parseInt(a, 10);
 				}
 				movie.episode = parseInt(b, 10);
-				movie.episode_name = c;
+				movie.episode_name = c.trim();
 				
 				if (movie.episode_name == "") {
-					movie.episode_name = "Episode " + movie.episode;
+					//if (movie.show && movie.episode === 1 && movie.season === 1) {
+					//	movie.episode_name = movie.show;	
+					//} else {
+						movie.episode_name = "Episode " + movie.episode;
+					//}
 				}
 				
 				// iTunes replaces characters like : and ? with _
@@ -350,7 +359,7 @@ function get_media_groups(files) {
 	
 	var groups = movies.reduce(function(result, obj) {
 		var key = obj.container_key;
-		var sort_key = key.replace(/^((the)|(an?))-(.*)$/, "$4-$1");
+		var sort_key = key.replace(/^((the)|(an?)|(le)|(la))-(.*)$/, "$6-$1");
 		var group = result[key] || { key: key, sort_key, container: obj.container, subcontainer: obj.subcontainer, movies: {} };
 		result[key] = group;
 		
@@ -394,6 +403,26 @@ function get_url_relative_to(url, base) {
 	return up + down;
 }
 
+function areShowsEqual(a, b) {
+	if (a === b) {
+		return true;
+	}
+	
+	var prefixes = ["The ", "A ", "An ", "Le ", "La "];
+	
+	if (prefixes.some(p => (p + a === b) || (p + b === a))) {
+		return true;
+	}
+	
+	var suffixes = [" Movie"];
+	
+	if (prefixes.some(p => (a + p === b) || (b + p === a))) {
+		return true;
+	}
+	
+	return false;
+}
+
 function get_movie_links(group, destination) {
 	var location = group.key + "/";
 	var full = $.NSURL.alloc.initFileURLWithPath(destination + location).absoluteString.js;
@@ -430,7 +459,7 @@ function get_movie_links(group, destination) {
 			if (movie.episode_name) {
 				name = movie.episode_name;
 				
-				if (movie.show && !((movie.container == movie.show) || ("The " + movie.container == movie.show)) && (movie.container != "Frost")) { // TODO
+				if (movie.show && !areShowsEqual(movie.container, movie.show) && (movie.container != "Frost")) { // TODO
 					name = movie.show + " - " + name;
 				}
 			}
@@ -491,7 +520,7 @@ function group_page(p) {
 	var json = JSON.stringify(p, null, "    ");
 	var title = p.name;
 	var display_season = p.display_season ? "inline-block" : "none";
-	var poster = p.images[0] ? p.images[0].url : "poster.jpg";
+	var poster = p.images[0] ? p.images[0].url : "/generic-poster.jpg";
 	var movies = p.movies.map(group => {
 		var movie = group[0];
 		return `<div><a href="${idx_doc(movie.link)}"><span class="season">${movie.season || ""}</span><span class="episode">${movie.episode || ""}</span><span class="name">${movie.name}</span></a></div>`;
@@ -536,7 +565,7 @@ function html_subtitle(sub, index) {
 function html_video(vids, fallbackPoster, baseURL) {
 	var vid = vids[0];
 	var image = vid.images[0];
-	var fb = fallbackPoster ? get_url_relative_to(fallbackPoster.url, baseURL) : "poster.jpg";
+	var fb = fallbackPoster ? get_url_relative_to(fallbackPoster.url, baseURL) : "/generic-poster.jpg";
 	var poster = image ? get_url_relative_to(image.url, baseURL) : (fb);
 	return "" +
 `<video controls poster="${poster}" width="854" height="480">
@@ -555,7 +584,7 @@ function html_video_page(vids, poster, baseURL) {
 	if (vid.season == 1 && vid.episode == 1) {
 		locator = "";
 	}
-	if (show == episode_name) {
+	if (areShowsEqual(show, episode_name)) {
 		show = "";
 	}
 	var dots = vid.subcontainer ? "../../.." : "../.."
