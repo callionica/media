@@ -15,13 +15,13 @@ SHIFT+ENTER: Toggle PIP;
 ARROWLEFT: back 15s;
 ARROWRIGHT: forward 30s
 
-The `currentTime` of the `video` is stored in localStorage using the page address as the key (origin + path only, excluding hash and search).
+The `currentTime` of the `video` is stored in `localStorage` using the page address as the key (origin + path only, excluding hash and search).
 
-The current time of the video can be set using a query string like ?t=32m14s or a hash like #t=32m14s.
+The current time of the video can be set using a query string like `?t=32m14s` or a hash like `#t=32m14s`.
 
 # container-script.js
 
-A script to be loaded in an HTML page that adds keyboard control for navigating between `<a>` links using the up and down arrow keys. It also looks in localStorage to see which of the `<a>` links was most recently active (where "active" is defined by some other page that writes to localStorage).
+A script to be loaded in an HTML page that adds keyboard control for navigating between `<a>` links using the up and down arrow keys. It also looks in `localStorage` to see which of the `<a>` links was most recently active (where "active" is defined by some other page that writes to `localStorage`).
 
 # SRTVTTGather.js
 
