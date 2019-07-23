@@ -4,15 +4,21 @@ html {
 *, *:before, *:after {
     box-sizing: inherit;
 }
-
-h1 {
-    font-size: 32pt;
-}
 html {
     color: rgb(2, 52, 116); /*text-color*/
     background: rgb(249, 248, 245); /*paper*/
     font-family: "Gill Sans", "San Francisco";
     font-size: 24pt;
+}
+h1 {
+    font-size: 32pt;
+	font-weight: inherit;
+	color: inherit;
+}
+h2 {
+	font-size: 24pt;
+	font-weight: inherit;
+	color: rgba(2, 52, 116, 0.8); /*text-color*/
 }
 a {
     color: inherit;
@@ -32,6 +38,10 @@ a {
     margin: 8px;
     padding: 0;
     width: 24pt;
+}
+.locator {
+	color: rgba(2, 52, 116, 0.4); /*text-color*/
+	/*color: LightGrey;*/
 }
 .name { margin: 8px; }
 .latest { color: black; }
