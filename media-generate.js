@@ -360,6 +360,17 @@ function get_media_groups(files) {
 	var groups = movies.reduce(function(result, obj) {
 		var key = obj.container_key;
 		var sort_key = key.replace(/^((the)|(an?)|(le)|(la))-(.*)$/, "$6-$1");
+		function pad_number(key) {
+			var pieces = key.split("-");
+			pieces.forEach((piece, n) => {
+				if (piece.match(/^\d{1,10}$/)) {
+					pieces[n] = ("0000000000" + piece).substr(piece.length);
+				}
+			});
+			
+			return pieces.join("-");
+		}
+		sort_key = pad_number(sort_key);
 		var group = result[key] || { key: key, sort_key, container: obj.container, subcontainer: obj.subcontainer, movies: {} };
 		result[key] = group;
 		
