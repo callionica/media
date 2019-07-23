@@ -149,7 +149,7 @@ function init() {
 				var e = document.activeElement;
 				e.click();
 			}
-		} else if ((65 <= evt.keyCode) || (evt.keyCode < 65+26)) {
+		} else if (((65 <= evt.keyCode) && (evt.keyCode < 65+26)) || ((48 <= evt.keyCode) && (evt.keyCode < 48+10))) {
 			var letter = String.fromCharCode(evt.keyCode); // works in this range
 			addToSearch(letter);
 		}
