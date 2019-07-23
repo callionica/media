@@ -87,12 +87,46 @@ function focus(direction) {
 	}
 }
 
+/* Removes articles (English, French, Spanish) */
+function simpleTitle(text) {
+	return text.replace(/^((the)|(an?)|(l[aeo]s?)|(une?)) (.*)$/i, "$6");
+}
+
+/*
+Focus the first A whose text starts with the specified prefix, otherwise the first A whose text includes the specified text
+*/
+function focusByPrefix(prefix) {
+	var lower = prefix.toLowerCase();
+	var targets = [...document.querySelectorAll("a")];
+	var nextElement = targets.find(t => simpleTitle(t.innerText).toLowerCase().startsWith(lower));
+	if (!nextElement) {
+		nextElement = targets.find(t => t.innerText.toLowerCase().includes(lower));
+	}
+	if (nextElement) {
+		nextElement.focus();
+	}
+}
+
 function init() {
 	updateLatestLink();
 	if (latestLink) {
 		latestLink.focus();
 	}
 	window.setInterval(updateLatestLink, 1 * 1000); // polling local storage every second
+
+	var searchPrefix = "";
+	var searchConsumesSpace = false;
+	var searchTimeout;
+
+	function addToSearch(letter) {
+		searchPrefix += letter;
+		searchConsumesSpace = true;
+		clearTimeout(searchTimeout);
+
+		focusByPrefix(searchPrefix);
+
+		searchTimeout = setTimeout(()=> { searchPrefix = ""; searchConsumesSpace = false; }, 0.5 * 1000);
+	}
 
 	document.onkeydown = function onkeydown(evt) {
 		evt = evt || window.event;
@@ -104,6 +138,20 @@ function init() {
 		} else if (evt.key === "ArrowUp") {
 			handled = true;
 			focus("back");
+		} else if (evt.keyCode == 32) { // SPACE
+			if (searchConsumesSpace) {
+				handled = true;
+				addToSearch(" ");
+			}
+			// Click on the currently active element
+			else if (document.activeElement) {
+				handled = true;
+				var e = document.activeElement;
+				e.click();
+			}
+		} else if ((65 <= evt.keyCode) || (evt.keyCode < 65+26)) {
+			var letter = String.fromCharCode(evt.keyCode); // works in this range
+			addToSearch(letter);
 		}
 
 		if (handled) {
