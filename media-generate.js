@@ -157,6 +157,9 @@ function extension_from_type(type) {
 }
 
 function mimetype_from_type(type) {
+	if (type == "public.mpeg-2-transport-stream") {
+		return "video/mp2t";
+	}
 	return ObjC.unwrap($.UTTypeCopyPreferredTagWithClass(type, $.kUTTagClassMIMEType));
 }
 
@@ -177,7 +180,7 @@ function is_image(value) {
 
 function is_subtitle(value) {
 	var extension = value.extension || extension_from_type(value.type || value);
-	return ["srt", "vtt", "webvtt"].includes(extension.toLowerCase());
+	return ["srt", "vtt", "webvtt", "ttml"].includes(extension.toLowerCase());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -317,11 +320,7 @@ function get_media_groups(files) {
 				movie.episode_name = c.trim();
 				
 				if (movie.episode_name == "") {
-					//if (movie.show && movie.episode === 1 && movie.season === 1) {
-					//	movie.episode_name = movie.show;	
-					//} else {
-						movie.episode_name = "Episode " + movie.episode;
-					//}
+					// Delay generating episode names until we've gathered all the related files
 				}
 				
 				// iTunes replaces characters like : and ? with _
@@ -353,13 +352,13 @@ function get_media_groups(files) {
 		movie.subtitles.forEach(tag);
 		movie.images = images.filter(is_image_match);
 		movie.images.forEach(tag);
-		movie.images = movie.images.sort(sort_by(image => -image.name.length));
+		movie.images = movie.images.sort(sort_by(image => -image.url.length));
 		
 	});
 	
 	var groups = movies.reduce(function(result, obj) {
 		var key = obj.container_key;
-		var sort_key = key.replace(/^((the)|(an?)|(le)|(la))-(.*)$/, "$6-$1");
+		var sort_key = key.replace(/^((the)|(an?)|(l[aeo]s?)|(un[ae]?)|(un[ao]s)|(des))-(.*)$/i, "$8");
 		function pad_number(key) {
 			var pieces = key.split("-");
 			pieces.forEach((piece, n) => {
@@ -391,7 +390,20 @@ function get_media_groups(files) {
 				((other.name == other.parent) || (other.name == "folder") || (other.name == "poster"));
 		}
 		
-		group.images = images.filter(is_match);
+		group.images = images.filter(is_match).sort(sort_by(image => -image.url.length));
+		
+		var m = Object.values(group.movies);
+		m.forEach(movies => {
+			movies.forEach(movie => {
+				if (movie.episode_name === "") {
+					if (m.length === 1 && movie.season === 1 && movie.episode === 1) {
+						movie.episode_name = movie.show;
+					} else {
+						movie.episode_name = "Episode " + movie.episode;
+					}
+				}
+			});
+		});
 	});
 	
 	groups = groups.sort(sort_by(group => group.sort_key));
@@ -419,6 +431,10 @@ function areShowsEqual(a, b) {
 		return true;
 	}
 	
+	if ((a === "A Touch of Frost" && b === "Frost") || (b === "A Touch of Frost" && a === "Frost")) {
+		return true;
+	}
+	
 	var prefixes = ["The ", "A ", "An ", "Le ", "La "];
 	
 	if (prefixes.some(p => (p + a === b) || (p + b === a))) {
@@ -427,7 +443,7 @@ function areShowsEqual(a, b) {
 	
 	var suffixes = [" Movie"];
 	
-	if (prefixes.some(p => (a + p === b) || (b + p === a))) {
+	if (suffixes.some(s => (a + s === b) || (b + s === a))) {
 		return true;
 	}
 	
@@ -470,7 +486,7 @@ function get_movie_links(group, destination) {
 			if (movie.episode_name) {
 				name = movie.episode_name;
 				
-				if (movie.show && !areShowsEqual(movie.container, movie.show) && (movie.container != "Frost")) { // TODO
+				if (movie.show && !areShowsEqual(movie.container, movie.show)) {
 					name = movie.show + " - " + name;
 				}
 			}
