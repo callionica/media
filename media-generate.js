@@ -646,6 +646,63 @@ function srt2vtt(subs) {
 	return vtt;
 }
 
+// POLYFILL
+function ensureFlag(flags, flag) {
+    return flags.includes(flag) ? flags : flags + flag;
+}
+
+function* matchAll(str, regex) {
+    const localCopy = new RegExp(
+        regex, ensureFlag(regex.flags, 'g'));
+    let match;
+    while (match = localCopy.exec(str)) {
+        yield match;
+    }
+}
+
+function ttml2vtt(subs) {
+	/*
+	This is a hugely hacky way to convert TTML to VTT, but it works for our limited inputs
+	THIS IS A HUGE HACK THAT DROPS USEFUL FEATURES OF TTML AND WONT WORK WITH ALL INPUTS
+	*/
+	var sub = /<p[^>]* begin="(\d{1,2}:\d{1,2}:\d{1,2}[.]\d{1,3})"[^>]* end="(\d{1,2}:\d{1,2}:\d{1,2}[.]\d{1,3})"[^>]*>(.*)<\/p>/g;
+	
+	var matches = [...matchAll(subs, sub)];
+	
+	if (!(matches && matches.length > 0)) {
+		return subs;
+	}
+	
+	var replacements = [
+		{ find: /<span [^>]*>/g, replace: "<i>" },
+		{ find: /<\/span>/g, replace: "</i>" },
+		{ find: /<br \/>/g, replace: "\n" },
+	];
+	
+	function strip(sub) {
+		var result = sub;
+		replacements.forEach(r => {
+			result = result.replace(r.find, r.replace);
+		});
+		return result;
+	}
+	
+	function padTime(time) {
+		// WEBVTT has exactly 3-digit milliseconds, add zeroes if we have fewer digits
+		var pieces = time.split(".");
+		if ((pieces.length === 2) && (pieces[1].length < 3)) {
+			return time + "0".repeat(3 - pieces[1].length);
+		}
+		return time;
+	}
+	
+	var vtt = matches.map((match, n) => {
+		return `${n+1}\n${padTime(match[1])} --> ${padTime(match[2])}\n${strip(match[3])}\n\n`;
+	});
+	
+	return "WEBVTT\n\n" + vtt.join("");
+}
+
 // Generate the page data
 function* get_pages(groups, destination) {
 	// Generate index page
@@ -676,7 +733,7 @@ function* get_pages(groups, destination) {
 					var filename = destination + location + subtitle.name + ".vtt";
 					var subs = read_file(subtitle.url);
 					create_directory(destination + location);
-					write_file(filename, srt2vtt(subs));
+					write_file(filename, srt2vtt(ttml2vtt(subs)));
 				});
 			});
 			
