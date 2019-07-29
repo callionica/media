@@ -614,12 +614,13 @@ function html_video_page(vids, poster, baseURL) {
 	if (areShowsEqual(show, episode_name)) {
 		show = "";
 	}
+	var showLocatorSuffix = `${show ? " - " + show : ""}${locator ? " " + locator : ""}`;
 	var dots = vid.subcontainer ? "../../.." : "../.."
 	return "" +
 `<!DOCTYPE html>
 <html>
 <head>
-<title>${episode_name} - ${show} ${locator}</title>
+<title>${episode_name}${showLocatorSuffix}</title>
 <link rel="stylesheet" type="text/css" href="${dots}/styles.css">
 <script src="${dots}/script.js"></script>
 </head>
@@ -674,8 +675,9 @@ function ttml2vtt(subs) {
 	}
 	
 	var replacements = [
-		{ find: /<span [^>]*>/g, replace: "<i>" },
-		{ find: /<\/span>/g, replace: "</i>" },
+		{ find: /<span tts:color="([^"]*)"[^>]*>/g, replace: "<c.$1>" },
+		{ find: /<span [^>]*>/g, replace: "<c>" },
+		{ find: /<\/span>/g, replace: "</c>" },
 		{ find: /<br \/>/g, replace: "\n" },
 	];
 	
