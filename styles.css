@@ -24,6 +24,107 @@ a {
     color: inherit;
     text-decoration: none;
 }
+
+::cue(.white) {
+    color: whitesmoke;
+}
+
+::cue(.lime) {
+    color: green;
+}
+
+::cue(.green) {
+    color: green;
+}
+
+::cue(.cyan) {
+    color: #0ff;
+}
+
+::cue(.red) {
+    color: red;
+}
+
+::cue(.yellow) {
+    color: #ff0;
+}
+
+::cue(.magenta) {
+    color: magenta;
+}
+
+::cue(.blue) {
+    color: #00f;
+}
+
+::cue(.black) {
+    color: black;
+}
+
+::cue(.color008000) {
+    color: green;
+}
+
+::cue(.bg_white) {
+    background-color: whitesmoke;
+}
+
+::cue(.bg_lime) {
+    background-color: green;
+}
+
+::cue(.bg_green) {
+    background-color: green;
+}
+
+::cue(.bg_cyan) {
+    background-color: cyan;
+}
+
+::cue(.bg_red) {
+    background-color: red;
+}
+
+::cue(.bg_yellow) {
+    background-color: yellow;
+}
+
+::cue(.bg_magenta) {
+    background-color: magenta;
+}
+
+::cue(.bg_blue) {
+    background-color: blue;
+}
+
+::cue(.bg_black) {
+    background-color: black;
+}
+
+::cue(.background-red) {
+    background-color: red;
+}
+
+::cue(.background-green) {
+    background-color: green;
+}
+
+::cue(.background-blue) {
+    background-color: #00f;
+}
+
+::cue(.background-yellow) {
+    background-color: #ff0;
+}
+
+::cue(.background-cyan) {
+    background-color: #0ff;
+}
+
+::cue(.background-color008000) {
+    background-color: green;
+}
+
 #sidebar {
     position: fixed;
 }
