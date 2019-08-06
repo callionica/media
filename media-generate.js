@@ -114,6 +114,20 @@ function sort_by(keyFn) {
 	}
 }
 
+function removePrefix(text, prefix) {
+	if (text.startsWith(prefix)) {
+		return text.substring(prefix.length);
+	}
+	return text;
+}
+
+function removeSuffix(text, suffix) {
+	if (text.endsWith(suffix)) {
+		return text.substring(0, text.length - suffix.length);
+	}
+	return text;
+}
+
 ////////////////////////////////////////////////////////////////////
 
 function crunch(text) {
@@ -274,16 +288,17 @@ function get_media_groups(files) {
 		file.key = url_crunch(file.core_name);
 
 		if (file.key.startsWith(file.container_key + "-")) {
-			file.key = file.key.substr(file.container_key.length + 1);
+			file.key = removePrefix(file.key, file.container_key + "-");
 		} else {
 			var ck = url_crunch(file.container);
-			if (file.key.startsWith(ck + "-")) {
-				file.key = file.key.substr(ck.length + 1);
-			}
+			file.key = removePrefix(file.key, ck + "-");
 		}
+		
+		file.key = removePrefix(file.key, "series-");
 	});
 	
-	var movies    = files.filter(file => file.category == "movie");
+	// TODO - sort within containers & sort articles
+	var movies    = files.filter(file => file.category == "movie").sort((a, b) => { return a.name.localeCompare(b.name, "en", { numeric: true }); });
 	var subtitles = files.filter(file => file.category == "subtitle");
 	var images    = files.filter(file => file.category == "image");
 
@@ -291,25 +306,34 @@ function get_media_groups(files) {
 
 		// File names can be:
 		// "TV Show - 01-01 Episode.mp4" // Show Season Episode Name
+		// "TV Show - 1. Episode.mp4" // Show Episode Name
 		// "01-01 Episode.mp4" // Season Episode Name
 		// "01 Episode.mp4" // Episode Name
 		// "01.mp4" // Episode
+		var possibles = [
+			/^((?<show>.*) - )?Series (?<season>\d{1,4}) - (?<episode>Episode (?<episodeNumber>\d{1,4}))$/ig,
+			/^((?<show>.*) - )?Series (?<season>\d{1,4}) - (?<episodeNumber>\d{1,4})[.]?\s*(?<episode>.*)$/ig,
+			/^((?<show>.*) - )?Series (?<season>\d{1,4}) - (?<episode>.*)$/ig,
+			/^((?<show>.*) - )?(?<season>\d{1,4})-(?<episodeNumber>\d{1,4})\s*(?<episode>.*)$/ig,
+			/^((?<show>.*) - )?(?<episodeNumber>\d{1,4})[.]?\s*(?<episode>.*)$/ig,
+		];
 		
-		var rx = /^((.*) - )?(\d{1,4})(-(\d{1,4}))?\s*(.*)$/ig;
-		var m = rx.exec(movie.core_name);
+		var m;		
+		for (var possible of possibles) {
+			m = possible.exec(movie.core_name);
+			if (m) {
+				break;
+			}
+		}
+		
 		if (m) {
-				var t = m[2];
-				var a = m[3];
-				var b = m[5];
-				var c = m[6];
+				var t = m.groups.show;
+				var a = m.groups.season;
+				var b = m.groups.episodeNumber;
+				var c = m.groups.episode;
 				
 				if (t == null) {
 					t = movie.container;
-				}
-				
-				if (b == null) {
-					b = a;
-					a = null;
 				}
 				
 				movie.show = t.trim();
@@ -674,6 +698,9 @@ function ttml2vtt(subs) {
 		return subs;
 	}
 	
+	var re_style = /<style id="([^"]*)"[^>]* tts:color="([^"]*)"[^>]*\/>/g;
+	var styles = [...matchAll(subs, re_style)].map(m => { return { id: m[1], color: m[2] }; });
+	
 	var replacements = [
 		{ find: /<span tts:color="([^"]*)"[^>]*>/g, replace: "<c.$1>" },
 		{ find: /<span [^>]*>/g, replace: "<c>" },
@@ -698,8 +725,20 @@ function ttml2vtt(subs) {
 		return time;
 	}
 	
+	var re_styleRef = /<p [^>]*style="([^"]*)"/;
 	var vtt = matches.map((match, n) => {
-		return `${n+1}\n${padTime(match[1])} --> ${padTime(match[2])}\n${strip(match[3])}\n\n`;
+		var styleRef = [...matchAll(match[0], re_styleRef)].map(m => m[1]);
+		var wrapStart = "";
+		var wrapEnd = "";
+		if (styleRef.length > 0) {
+			var ref = styleRef[0];
+			var style = styles.find(style => style.id === ref);
+			if (style) {
+				wrapStart = `<c.${style.color}>`;
+				wrapEnd = "</c>"
+			}
+		}
+		return `${n+1}\n${padTime(match[1])} --> ${padTime(match[2])}\n${wrapStart}${strip(match[3])}${wrapEnd}\n\n`;
 	});
 	
 	return "WEBVTT\n\n" + vtt.join("");
@@ -773,3 +812,4 @@ function main() {
 }
 
 main();
+new Date();
