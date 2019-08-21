@@ -20,6 +20,7 @@ function ready(callback) {
 }
 
 function togglePlay(video) {
+	video = video || document.querySelector("video");
 	if (video.paused) {
 		video.play();
 	} else {
@@ -187,6 +188,7 @@ function init() {
 
 	// Notify the parent that a new item is being played
 	video.addEventListener('play', (event) => {
+	  document.body.setAttribute("data-playing", "true");
 	  localStorage.setItem(parentPID + "latest", JSON.stringify({ title: document.title, href: document.location.href, date: new Date() }));
 	});
 		
