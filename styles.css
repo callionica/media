@@ -1,30 +1,3 @@
-html {
-    box-sizing: border-box;
-}
-*, *:before, *:after {
-    box-sizing: inherit;
-}
-html {
-    color: rgb(2, 52, 116); /*text-color*/
-    background: rgb(249, 248, 245); /*paper*/ /*12,16,28*/
-    font-family: "Gill Sans", "San Francisco";
-    font-size: 24pt;
-}
-h1 {
-    font-size: 32pt;
-	font-weight: inherit;
-	color: inherit;
-}
-h2 {
-	font-size: 24pt;
-	font-weight: inherit;
-	color: rgba(2, 52, 116, 0.8); /*text-color*/
-}
-a {
-    color: inherit;
-    text-decoration: none;
-}
-
 ::cue(.white) {
     color: whitesmoke;
 }
@@ -125,25 +98,341 @@ a {
     background-color: green;
 }
 
+html {
+    box-sizing: border-box;
+}
+
+*, *:before, *:after {
+    box-sizing: inherit;
+}
+
+body[data-page='group'] {
+    --sidebar-width: 25vw;
+}
+
 #sidebar {
     position: fixed;
+    float: left;
+    width: var(--sidebar-width, 20vw);
+    padding-right: 3vw;
+    padding-top: 1vw;
 }
+
+#sidebar img {
+    width: 100%;
+}
+
+#content {
+    margin-left: var(--sidebar-width, 20vw);
+}
+
 .season {
     display: var(--display-season, inline-block);
-    margin: 8px;
+    margin: 1vw;
     padding: 0;
-    width: 24pt;
+    width: 3vw;
 }
 .episode {
     display: var(--display-season, inline-block);
-    margin: 8px;
+    margin: 1vw;
     padding: 0;
-    width: 24pt;
+    width: 3vw;
+}
+.synopsis {
+	display: block;
 }
 .locator {
 	color: rgba(2, 52, 116, 0.4); /*text-color*/
 	/*color: LightGrey;*/
 }
 .name { margin: 8px; }
-.latest { color: black; }
 .latest::after { content: " ←"; }
+
+:root {
+    --background-color-rgb: 12, 16, 28;
+    --background-color: rgba(var(--background-color-rgb), 1);
+
+    --color-rgb: 245, 245, 245;
+    --color: rgba(var(--color-rgb), 1);
+
+    --gray1_: 225;
+    --gray1-rgb: var(--gray1_), var(--gray1_), var(--gray1_);
+    --gray1: rgba(var(--gray1-rgb), 1);
+
+    --gray2_: 200;
+    --gray2-rgb: var(--gray2_), var(--gray2_), var(--gray2_);
+    --gray2: rgba(var(--gray2-rgb), 1);
+
+    --play-button-background-color: rgba(12, 16, 68, 0.8);
+    --action-color: aqua;
+    --focus-color: yellow;
+}
+
+* {
+    border:  0px;
+    margin:  0px;
+    padding: 0px;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+a:focus {
+    color: var(--focus-color);
+}
+
+img {
+    object-fit: contain;
+}
+
+body {
+    color: var(--color);
+    background-color: var(--background-color);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 3vw;
+}
+
+video {
+    background-color: var(--background-color);
+}
+
+.backdrop {
+    position: relative;
+    top: 0px;
+    left: 0px;
+    width: 100vw;
+    max-height: 100vh;
+    overflow: hidden;
+    z-index: 0;
+}
+
+.backdrop-image {
+    z-index: 1;
+    pointer-events: none;
+    width: 100%;
+    max-height: 100vh;
+}
+
+.backdrop-gradient {
+    pointer-events: none;
+    background: linear-gradient(to bottom,
+            rgba(var(--background-color-rgb), 0.0) 0%,
+            rgba(var(--background-color-rgb), 0.0) 50%,
+            rgba(var(--background-color-rgb), 0.6) 70%,
+            rgba(var(--background-color-rgb), 1.0) 100%);
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.backdrop-video {
+    pointer-events: none;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+}
+
+body[data-playing="true"] .backdrop-video {
+    pointer-events: initial;
+    opacity: 1;
+    transition: opacity 0.6s ease;
+}
+
+.overlay {
+    position: relative;
+    transform: translateY(-100%);
+    transition: transform 0.6s ease;
+}
+
+body[data-playing="true"] .overlay {
+    transform: translateY(0%);
+    transition: transform 0.6s ease;
+}
+
+.sized-content {
+    padding-top: 3vw;
+    padding-bottom: 3vw;
+    padding-left: 5vw;
+    padding-right: 5vw;
+}
+
+.unsized-content {
+    position: absolute;
+    width: 100vw;
+    padding-top: 0vw;
+    padding-bottom: 0vw;
+    padding-left: 5vw;
+    padding-right: 5vw;
+}
+
+h1 {
+    font-size: 6vw;
+}
+
+h2 {
+    font-size: 4vw;
+    margin-bottom: 2vw;
+}
+
+.play {
+    position: absolute;
+    /*transform: translateY(-13vw);*/
+    top: 3vw;
+    left: 85vw;
+    width: 10vw;
+    height: 10vw;
+
+    line-height: 10vw;
+    text-align: center;
+    font-size: 6vw;
+
+    border-radius: 1vw;
+    cursor: default;
+    user-select: none;
+    -webkit-user-select: none;
+
+    opacity: 0.5;
+    background-color: rgba(var(--background-color-rgb), 0.3);
+    transition: opacity 0.6s ease, background-color 0.6s ease;
+}
+
+.play:hover {
+    opacity: 1.0;
+    background-color: var(--play-button-background-color);
+    transition: opacity 0.2s ease, background-color 0.6s ease;
+}
+
+body[data-playing="true"] .play {
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    transition-delay: 0.8s;
+}
+
+.show {
+    color: var(--gray1);
+    opacity: 0.95;
+}
+
+.locator {
+    color: var(--gray2);
+    text-transform: lowercase;
+    font-variant: small-caps;
+}
+
+.action {
+    color: var(--action-color);
+    text-transform: lowercase;
+    font-variant: small-caps;
+}
+
+.this-next-episode::after {
+    content: "Next episode";
+}
+
+body[data-playing="true"] .this-next-episode::after {
+    content: "This episode";
+}
+
+#go-next {
+    display: none;
+}
+
+body[data-playing="true"] #go-next {
+    display: block;
+}
+
+.unsized-content p {
+    margin-bottom: 2vw;
+}
+
+.unsized-content li {
+    list-style: none;
+    display: flexbox;
+    display: -webkit-box;
+    flex-direction: row;
+    align-items: stretch;
+    align-content: stretch;
+    margin-bottom: 3vw;
+    overflow: hidden;
+}
+
+li {
+    position: relative;
+}
+
+li>* {
+    display: flex;
+    display: -webkit-flex;
+}
+
+.unsized-content img {
+    width: 22vw;
+    height: 100%;
+    max-height: 19vw;
+    min-height: 12vw;
+    margin-right: 3vw;
+}
+
+.details {
+    display: block;
+    width: 65vw;
+    min-height: 12vw;
+    font-size: 2.5vw;
+}
+
+.details h1 {
+    font-size: 4vw;
+    margin-bottom: 0.5vw;
+}
+
+.details h2 {
+    font-size: 3vw;
+    margin-bottom: 1vw;
+}
+
+.details p {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    margin-bottom: 0;
+    color: var(--gray2);
+}
+
+.season {
+    padding-right: 1vw;
+}
+.season::before {
+    content: "S";
+}
+.season:empty {
+    display: none;
+}
+
+.episode {
+    padding-right: 1vw;
+}
+.episode:not(:empty)::before {
+    content: "E";
+}
+/*.episode:empty {
+    display: none;
+}*/
+
+body[data-page='group'] {
+    padding: 3vw;
+}
+
+body[data-page='groups'] {
+    padding: 3vw;
+}
