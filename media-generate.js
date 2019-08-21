@@ -197,6 +197,11 @@ function is_subtitle(value) {
 	return ["srt", "vtt", "webvtt", "ttml"].includes(extension.toLowerCase());
 }
 
+function is_text(value) {
+	var extension = value.extension || extension_from_type(value.type || value);
+	return ["txt"].includes(extension.toLowerCase());
+}
+
 ////////////////////////////////////////////////////////////////////
 
 ObjC.import('CoreMedia');
@@ -256,6 +261,9 @@ function get_media_groups(files) {
 		else if (is_subtitle(file)) {
 			file.category = "subtitle";
 		}
+		else if (is_text(file)) {
+			file.category = "text";
+		}
 		else {
 			file.category = "unknown";
 		}
@@ -301,6 +309,7 @@ function get_media_groups(files) {
 	var movies    = files.filter(file => file.category == "movie").sort((a, b) => { return a.name.localeCompare(b.name, "en", { numeric: true }); });
 	var subtitles = files.filter(file => file.category == "subtitle");
 	var images    = files.filter(file => file.category == "image");
+	var texts     = files.filter(file => file.category == "text");
 
 	movies.forEach(movie => {
 
@@ -316,6 +325,7 @@ function get_media_groups(files) {
 			/^((?<show>.*) - )?Series (?<season>\d{1,4}) - (?<episode>.*)$/ig,
 			/^((?<show>.*) - )?(?<season>\d{1,4})-(?<episodeNumber>\d{1,4})\s*(?<episode>.*)$/ig,
 			/^((?<show>.*) - )?(?<episodeNumber>\d{1,4})[.]?\s*(?<episode>.*)$/ig,
+			/^((?<show>.*) - )?(?<episode>Episode (?<episodeNumber>\d{1,4}))$/ig,
 		];
 		
 		var m;		
@@ -377,7 +387,7 @@ function get_media_groups(files) {
 		movie.images = images.filter(is_image_match);
 		movie.images.forEach(tag);
 		movie.images = movie.images.sort(sort_by(image => -image.url.length));
-		
+		movie.texts = texts.filter(is_match).map(text => read_file(text.url));
 	});
 	
 	var groups = movies.reduce(function(result, obj) {
@@ -556,7 +566,7 @@ function groups_page(p) {
 	<script src="container-script.js"></script>
 	<script type="application/json">${json}</script>
 	</head>
-	<body>
+	<body data-page="groups">
 	<h1>${title}</h1>
 	${groups}
 	</body>
@@ -591,10 +601,10 @@ function group_page(p) {
 	<script src="${dots}/container-script.js"></script>
 	<script type="application/json">${json}</script>
 	</head>
-	<body>
+	<body data-page="group">
 	<h1>${title}</h1>
-	<div id="sidebar" style="width: ${sidebar_width}px; float: left;"><img width="${sidebar_width}" src=${poster}></div>
-	<div id="content" style="margin-left: ${sidebar_width + 8}px;">
+	<div id="sidebar"><img src=${poster}></div>
+	<div id="content">
 	${movies}
 	</div>
 	</body>
@@ -619,14 +629,23 @@ function html_video(vids, fallbackPoster, baseURL) {
 	var fb = fallbackPoster ? get_url_relative_to(fallbackPoster.url, baseURL) : "/generic-poster.jpg";
 	var poster = image ? get_url_relative_to(image.url, baseURL) : (fb);
 	return "" +
-`<video controls poster="${poster}" width="854" height="480">
+`<video class="backdrop-video" controls poster="${poster}" >
 	${vids.map(vid => html_source(vid, baseURL)).join("\n\t")}
 	${vid.subtitles.map((sub, index) => html_subtitle(sub, index)).join("\n\t")}
 </video>
-`;
+`; /*width="854" height="480"*/
 }
 
-function html_video_page(vids, poster, baseURL) {
+function synopsis(vid) {
+	var text = vid.texts[0];
+	if (!text) {
+		return "";
+	}
+	
+	return `<p class="synopsis">${text}</p>`;
+}
+
+function html_video_page(vids, fallbackPoster, baseURL) {
 	var vid = vids[0];
 	var episode_name = vid.episode_name || vid.core_name;
 	var show = vid.show || vid.container;
@@ -639,9 +658,45 @@ function html_video_page(vids, poster, baseURL) {
 		show = "";
 	}
 	var showLocatorSuffix = `${show ? " - " + show : ""}${locator ? " " + locator : ""}`;
-	var dots = vid.subcontainer ? "../../.." : "../.."
+	var dots = vid.subcontainer ? "../../.." : "../..";
+	
+	var image = vid.images[0];
+	var fb = fallbackPoster ? get_url_relative_to(fallbackPoster.url, baseURL) : "/generic-poster.jpg";
+	var poster = image ? get_url_relative_to(image.url, baseURL) : (fb);
+	
 	return "" +
-`<!DOCTYPE html>
+`
+<!DOCTYPE html>
+<html>
+<head>
+<title>${episode_name}${showLocatorSuffix}</title>
+<link rel="stylesheet" type="text/css" href="${dots}/styles.css">
+<script src="${dots}/script.js"></script>
+</head>
+
+<body data-page="item" data-playing="false">
+
+	<div class="backdrop">
+		<img class="backdrop-image" src="${poster}">
+		<div class="backdrop-gradient"></div>
+${html_video(vids, fallbackPoster, baseURL)}
+	</div>
+
+	<div class="overlay">
+		<div class="sized-content">
+			<div id="play" class="play" onclick="togglePlay()">▶</div>	
+<h1 class="episode_name">${episode_name}</h1>
+<h2><span class="show">${show}</span> <span class="locator">${locator}</span></h2>
+${synopsis(vid)}
+		</div>
+		<div class="unsized-content">
+		</div>
+	</div>
+
+	<body>
+</html>
+`;
+/*`<!DOCTYPE html>
 <html>
 <head>
 <title>${episode_name}${showLocatorSuffix}</title>
@@ -651,10 +706,11 @@ function html_video_page(vids, poster, baseURL) {
 <body>
 <h1 class="episode_name">${episode_name}</h1>
 <h2><span class="show">${show}</span> <span class="locator">${locator}</span></h2>
-${html_video(vids, poster, baseURL)}
+${html_video(vids, fallbackPoster, baseURL)}
+${synopsis(vid)}
 <body>
 </html>
-`;
+`;*/
 }
 
 function srt2vtt(subs) {
