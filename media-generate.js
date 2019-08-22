@@ -417,14 +417,20 @@ function get_media_groups(files) {
 	
 	groups.forEach(group => {
 		/*
-		A group image has the same name as its parent or it is called "folder" or "poster"
+		A group image has the same name (prefix) as its parent or it is called "folder" or "poster"
 		*/
 		function is_match(other) {
 			return other.container == group.container && ((other.subcontainer == undefined) || (other.subcontainer == group.subcontainer)) &&
-				((other.name == other.parent) || (other.name == "folder") || (other.name == "poster"));
+				((other.name == other.parent) || other.name.startsWith(other.parent + ".") || (other.name == "folder") || (other.name == "poster"));
+		}
+		
+		function tag(other) {
+			other.tag = other.name.substr(other.parent.length + 1);
+			other.lang = tag2lang(other.tag);
 		}
 		
 		group.images = images.filter(is_match).sort(sort_by(image => -image.url.length));
+		group.images.forEach(tag);
 		
 		var m = Object.values(group.movies);
 		m.forEach(movies => {
@@ -545,7 +551,7 @@ function get_movie_links(group, destination) {
 		name: group.container + (group.subcontainer ? (" " + group.subcontainer) : ""),
 		display_season: display_season,
 		movies,
-		images: group.images.map(image => { return { url: get_url_relative_to(image.url, full) }; }),
+		images: group.images.map(image => { return { tag: image.tag, url: get_url_relative_to(image.url, full) }; }),
 		lowest_season, highest_season, multiple_shows
 	};
 }
@@ -577,17 +583,19 @@ function groups_page(p) {
 }
 
 function group_page(p) {
+	var dots = p.subcontainer ? "../.." : ".."
 	var sidebar_width = 156;
 	var json = JSON.stringify(p, null, "    ");
 	var title = p.name;
 	var display_season = p.display_season ? "inline-block" : "none";
-	var poster = p.images[0] ? p.images[0].url : "/generic-poster.jpg";
+	var poster_ = p.images.filter(img => img.tag == "" || img.tag === "poster")[0] || p.images[0];
+	var poster = poster_ ? poster_.url : `${dots}/generic-poster.jpg`;
 	var movies = p.movies.map(group => {
 		var movie = group[0];
 		return `<div><a href="${idx_doc(movie.link)}"><span class="season">${movie.season || ""}</span><span class="episode">${movie.episode || ""}</span><span class="name">${movie.name}</span></a></div>`;
 		
 	}).join("\n");
-	var dots = p.subcontainer ? "../.." : ".."
+
 	var html = 
 	`<html>
 	<head>
@@ -623,17 +631,14 @@ function html_subtitle(sub, index) {
 	return `<track kind="subtitles" ${default_}label="${sub.tag}" srclang="${sub.lang}" src="${sub.name + ".vtt"}">`;
 }
 
-function html_video(vids, fallbackPoster, baseURL) {
+function html_video(vids, poster, baseURL) {
 	var vid = vids[0];
-	var image = vid.images[0];
-	var fb = fallbackPoster ? get_url_relative_to(fallbackPoster.url, baseURL) : "/generic-poster.jpg";
-	var poster = image ? get_url_relative_to(image.url, baseURL) : (fb);
 	return "" +
 `<video class="backdrop-video" controls poster="${poster}" >
 	${vids.map(vid => html_source(vid, baseURL)).join("\n\t")}
 	${vid.subtitles.map((sub, index) => html_subtitle(sub, index)).join("\n\t")}
 </video>
-`; /*width="854" height="480"*/
+`;
 }
 
 function synopsis(vid) {
@@ -660,8 +665,8 @@ function html_video_page(vids, fallbackPoster, baseURL) {
 	var showLocatorSuffix = `${show ? " - " + show : ""}${locator ? " " + locator : ""}`;
 	var dots = vid.subcontainer ? "../../.." : "../..";
 	
-	var image = vid.images[0];
-	var fb = fallbackPoster ? get_url_relative_to(fallbackPoster.url, baseURL) : "/generic-poster.jpg";
+	var image = vid.images.filter(img => img.tag === "backdrop")[0] || vid.images[0];
+	var fb = fallbackPoster ? get_url_relative_to(fallbackPoster.url, baseURL) : `${dots}/generic-poster.jpg`;
 	var poster = image ? get_url_relative_to(image.url, baseURL) : (fb);
 	
 	return "" +
@@ -679,7 +684,7 @@ function html_video_page(vids, fallbackPoster, baseURL) {
 	<div class="backdrop">
 		<img class="backdrop-image" src="${poster}">
 		<div class="backdrop-gradient"></div>
-${html_video(vids, fallbackPoster, baseURL)}
+${html_video(vids, poster, baseURL)}
 	</div>
 
 	<div class="overlay">
@@ -819,7 +824,8 @@ function* get_pages(groups, destination) {
 		var movies = get_movie_links(group, destination);
 		yield group_page(movies);
 		
-		var poster = group.images[0];
+		var poster = group.images.filter(img => img.tag == "" || img.tag === "poster")[0] || group.images[0];
+		var backdrop = group.images.filter(img => img.tag === "backdrop")[0] || group.images[0];
 		var pages = Object.values(group.movies).map(movie_group => {
 			var movie = movie_group[0];
 			var location = (movie.container_key + "/" + movie.key + "/");
@@ -834,7 +840,7 @@ function* get_pages(groups, destination) {
 				});
 			});
 			
-			return { location, html: html_video_page(movie_group, poster, full) };
+			return { location, html: html_video_page(movie_group, backdrop, full) };
 		});
 		
 		yield* pages;
@@ -847,11 +853,13 @@ function main() {
 	
 	create_directory(destination);
 	
-	var sources = ["styles.css", "script.js", "container-script.js"];
+	var sources = ["styles.css", "script.js", "container-script.js", "generic-poster.jpg"];
 	
 	sources.forEach(source => {
-		var content = read_file(path + source);
-		write_file(destination + source, content);
+		/*var content = read_file(path + source);
+		write_file(destination + source, content);*/
+		var command = `cp "${path + source}" "${destination + source}"`;
+		app.doShellScript(command);
 	});
 	
 	var files = get_files(source);
