@@ -99,11 +99,18 @@ function isPictureInPicture(video) {
 }
 
 function toggleFullscreen(video) {
+	var video = document.querySelector("video");
 	if (fullscreenElement()) {
 		exitFullscreen();
+		if (!video.paused) {
+			video.pause();
+		}
 	} else {
 		exitPictureInPicture(video);
 		requestFullscreen(video);
+		if (video.paused) {
+			video.play();
+		}
 	}
 }
 
