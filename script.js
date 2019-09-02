@@ -136,6 +136,14 @@ function getPID() {
 	return pid;
 }
 
+function seconds_to_hhmmss(t) {
+	if (isNaN(t)) return '-:--';
+	var h = parseInt(t / 3600);
+	var m = parseInt(t / 60) % 60;
+	var s = parseInt(t % 60);
+	return (h ? h + ':' : '') + (h ? ('0' + m).slice(-2) : m) + ':' + ('0' + s).slice(-2);
+}
+
 function init() {
 	var video = document.querySelector("video");
 	
@@ -172,9 +180,9 @@ function init() {
 	
 	// Read the video position from local storage if URL didn't specify a time
 	if (!currentTime) {
-		var ct = localStorage.getItem(pid + "currentTime");
+		var ct = JSON.parse(localStorage.getItem(pid + "currentTime"));
 		if (ct) {
-			currentTime = parseFloat(ct);
+			currentTime = ct.currentTime;
 		}
 	}
 	
@@ -195,13 +203,49 @@ function init() {
 
 	// Notify the parent that a new item is being played
 	video.addEventListener('play', (event) => {
-	  document.body.setAttribute("data-playing", "true");
-	  localStorage.setItem(parentPID + "latest", JSON.stringify({ title: document.title, href: document.location.href, date: new Date() }));
+		document.body.setAttribute("data-playing", "true");
+
+		var data = JSON.stringify({
+			title: document.title,
+			href: document.location.href,
+			parent: parentPID,
+			persistenceID: pid,
+			date: new Date(),
+		});
+
+		localStorage.setItem(parentPID + "latest", data);
+		localStorage.setItem(":root/" + "latest", data);
+	});
+
+	video.addEventListener('pause', (event) => {
+		//document.body.setAttribute("data-playing", "false");
+	});
+
+	function displayElapsed() {
+		var elapsed = document.querySelector(".elapsed");
+		if (elapsed) {
+			elapsed.innerHTML = `<span class="currentTime">${video.currentTime > 0 ? seconds_to_hhmmss(video.currentTime) : ""}</span><span class="duration">${seconds_to_hhmmss(video.duration)}</span>`;
+		}
+	}
+
+	video.addEventListener('loadedmetadata', (event) => {
+		displayElapsed();
 	});
 		
-	// Write the video position to local storage
+	
 	video.addEventListener('timeupdate', (event) => {
-	  localStorage.setItem(pid + "currentTime", video.currentTime);
+		// Update the UI with the current time
+		displayElapsed();
+		
+		// Write the video position to local storage
+		localStorage.setItem(pid + "currentTime", JSON.stringify(
+			{ currentTime: video.currentTime, duration: video.duration }
+		));
+
+		// If at the end of video, update the UI
+		if (video.currentTime === video.duration) {
+			document.body.setAttribute("data-playing", "false");
+		}
 	});
 	
 	document.onkeydown = function onkeydown(evt) {
@@ -222,6 +266,9 @@ function init() {
 			} else {
 				togglePIP(video);
 			}
+			handled = true;
+		} else if (evt.key === "Backspace") {
+			window.history.back();
 			handled = true;
 		} else if (evt.key === "ArrowRight") {
 			video.currentTime += 30.0;
