@@ -217,7 +217,7 @@ function get_duration(file) {
 
 ////////////////////////////////////////////////////////////////////
 
-function tag2lang(tag) {
+function tag2lang_(tag) {
 	var t = tag.toLowerCase();
 	var data = [
 		["en", "en-us", "en-gb"],
@@ -237,6 +237,19 @@ function tag2lang(tag) {
 		}
 	});
 	
+	return lang;
+}
+
+function tag2lang(tag) {
+	return tag2lang_(tag) || "en";
+}
+
+function tags2lang(tags) {
+	var lang;
+	tags.some(tag => {
+		lang = tag2lang_(tag);
+		return lang;
+	});
 	return lang || "en";
 }
 
@@ -379,7 +392,8 @@ function get_media_groups(files) {
 		
 		function tag(other) {
 			other.tag = other.name.substr(prefix.length);
-			other.lang = tag2lang(other.tag);
+			other.tags = other.tag.split(".").filter(tag => tag.length > 0);
+			other.lang = tags2lang(other.tags);
 		}
 		
 		movie.subtitles = subtitles.filter(is_match);
@@ -426,7 +440,8 @@ function get_media_groups(files) {
 		
 		function tag(other) {
 			other.tag = other.name.substr(other.parent.length + 1);
-			other.lang = tag2lang(other.tag);
+			other.tags = other.tag.split(".").filter(tag => tag.length > 0);;
+			other.lang = tags2lang(other.tags);
 		}
 		
 		group.images = images.filter(is_match).sort(sort_by(image => -image.url.length));
@@ -490,6 +505,43 @@ function areShowsEqual(a, b) {
 	return false;
 }
 
+function selectImage(images, kind, season) {
+	var checked = images;
+	var previous;
+	
+	var passthrough = (img => true);
+	var checkKindPoster = (img => img.tags.includes("poster") || (img.tags.length === 0));
+	
+	previous = checked;
+	
+	var checkKind;
+	switch (kind) {
+		case undefined:
+			checkKind = passthrough;
+			break;
+		case "poster":
+			checkKind = checkKindPoster;
+			break;
+		default:
+			checkKind = (img => img.tags.includes(kind));
+			break;
+	}
+	
+	checked = checked.filter(checkKind);
+	if (checked.length === 0) {
+		checked = previous;
+	} 
+	
+	previous = checked;
+	var checkSeason = season ? (img => img.tags.includes("season-" + season)) : passthrough;
+	checked = checked.filter(checkSeason);
+	if (checked.length === 0) {
+		checked = previous;
+	}
+	
+	return checked[0];
+}
+
 function get_movie_links(group, destination) {
 	var location = group.key + "/";
 	var full = $.NSURL.alloc.initFileURLWithPath(destination + location).absoluteString.js;
@@ -551,7 +603,7 @@ function get_movie_links(group, destination) {
 		name: group.container + (group.subcontainer ? (" " + group.subcontainer) : ""),
 		display_season: display_season,
 		movies,
-		images: group.images.map(image => { return { tag: image.tag, url: get_url_relative_to(image.url, full) }; }),
+		images: group.images.map(image => { return { tag: image.tag, tags: image.tags, url: get_url_relative_to(image.url, full) }; }),
 		lowest_season, highest_season, multiple_shows
 	};
 }
@@ -588,7 +640,7 @@ function group_page(p) {
 	var json = JSON.stringify(p, null, "    ");
 	var title = p.name;
 	var display_season = p.display_season ? "inline-block" : "none";
-	var poster_ = p.images.filter(img => img.tag == "" || img.tag === "poster")[0] || p.images[0];
+	var poster_ = selectImage(p.images, "poster"); //p.images.filter(img => img.tag == "" || img.tag === "poster")[0] || p.images[0];
 	var poster = poster_ ? poster_.url : `${dots}/generic-poster.jpg`;
 	var movies = p.movies.map(group => {
 		var movie = group[0];
@@ -665,7 +717,7 @@ function html_video_page(vids, fallbackPoster, baseURL) {
 	var showLocatorSuffix = `${show ? " - " + show : ""}${locator ? " " + locator : ""}`;
 	var dots = vid.subcontainer ? "../../.." : "../..";
 	
-	var image = vid.images.filter(img => img.tag === "backdrop")[0] || vid.images[0];
+	var image = selectImage(vid.images, "backdrop", vid.season); // vid.images.filter(img => img.tag === "backdrop")[0] || vid.images[0];
 	var fb = fallbackPoster ? get_url_relative_to(fallbackPoster.url, baseURL) : `${dots}/generic-poster.jpg`;
 	var poster = image ? get_url_relative_to(image.url, baseURL) : (fb);
 	
@@ -692,9 +744,10 @@ ${html_video(vids, poster, baseURL)}
 			<div id="play" class="play" onclick="togglePlay()">▶</div>	
 <h1 class="episode_name">${episode_name}</h1>
 <h2><span class="show">${show}</span> <span class="locator">${locator}</span></h2>
-${synopsis(vid)}
+			<p class="elapsed">--:--:--</p>
 		</div>
 		<div class="unsized-content">
+${synopsis(vid)}
 		</div>
 	</div>
 
@@ -824,12 +877,12 @@ function* get_pages(groups, destination) {
 		var movies = get_movie_links(group, destination);
 		yield group_page(movies);
 		
-		var poster = group.images.filter(img => img.tag == "" || img.tag === "poster")[0] || group.images[0];
-		var backdrop = group.images.filter(img => img.tag === "backdrop")[0] || group.images[0];
 		var pages = Object.values(group.movies).map(movie_group => {
 			var movie = movie_group[0];
 			var location = (movie.container_key + "/" + movie.key + "/");
 			var full = $.NSURL.alloc.initFileURLWithPath(destination + location).absoluteString.js;
+		
+			var backdrop = selectImage(group.images, "backdrop", movie.season); //group.images.filter(img => img.tag === "backdrop")[0] || group.images[0];
 			
 			movie_group.forEach(movie => {
 				movie.subtitles.forEach(subtitle => {
@@ -848,6 +901,7 @@ function* get_pages(groups, destination) {
 }
 
 function main() {
+//	debugger;
 	var source = "/Volumes/disk/video/";
 	var destination = "/Volumes/disk/media-test/";
 	
