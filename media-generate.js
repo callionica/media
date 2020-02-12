@@ -640,7 +640,8 @@ function group_page(p) {
 	var json = JSON.stringify(p, null, "    ");
 	var title = p.name;
 	var display_season = p.display_season ? "inline-block" : "none";
-	var poster_ = selectImage(p.images, "poster"); //p.images.filter(img => img.tag == "" || img.tag === "poster")[0] || p.images[0];
+	var vid = p.movies[0][0];
+	var poster_ = selectImage(p.images, "poster", vid.season); //p.images.filter(img => img.tag == "" || img.tag === "poster")[0] || p.images[0];
 	var poster = poster_ ? poster_.url : `${dots}/generic-poster.jpg`;
 	var movies = p.movies.map(group => {
 		var movie = group[0];
@@ -744,7 +745,7 @@ ${html_video(vids, poster, baseURL)}
 			<div id="play" class="play" onclick="togglePlay()">▶</div>	
 <h1 class="episode_name">${episode_name}</h1>
 <h2><span class="show">${show}</span> <span class="locator">${locator}</span></h2>
-			<p class="elapsed">--:--:--</p>
+			<p class="elapsed"><span class="currentTime"></span><span class="duration">--:--</span></p>
 		</div>
 		<div class="unsized-content">
 ${synopsis(vid)}
@@ -820,6 +821,8 @@ function ttml2vtt(subs) {
 		{ find: /<span [^>]*>/g, replace: "<c>" },
 		{ find: /<\/span>/g, replace: "</c>" },
 		{ find: /<br \/>/g, replace: "\n" },
+		{ find: /&#163;/g, replace: "£" },
+		
 	];
 	
 	function strip(sub) {
