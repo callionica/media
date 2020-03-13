@@ -501,11 +501,18 @@ ${simpleAlbum.tracks.map(generateTrack).join("\n")}
     </script>
     <script src="player.js"></script>
     </head>
-    <body data-page="groups">
+    <body>
     <div id="now-playing">
-    ➼ Now Playing
+    <div id="now-playing-track"></div>
+    <div id="now-playing-artist"></div>
+    <div id="now-playing-album"></div>
+    <div id="now-playing-track-number"></div><div id="now-playing-track-count"></div>
     </div>
-    <h1>Player</h1>
+    <div id="library">
+    <div id="library-artist"></div>
+    <div id="library-album"></div>
+    <div id="library-track"></div>
+    </div>
     <video id="player" src=""></video>
     </body>
     </html>
