@@ -32,7 +32,7 @@
         }
     }
 
-    let pid = getPID();
+    let pid;
     let player;
     let searcher;
 
@@ -76,24 +76,24 @@
 
         updateUI() {
             const o = this.current;
-            document.title = `${o.track.name} - ${o.artist.name} (${this.index + 1}/${this.tracks.length})`;
+            if (!o) {
+                document.title = `Player`;
+            } else {
+                document.title = `${o.track.name} - ${o.artist.name} (${this.index + 1}/${this.tracks.length})`;
+            }
 
             let data = [
-                { selector: "#now-playing-artist", value: o.artist.name},
-                { selector: "#now-playing-album", value: o.album.name},
-                { selector: "#now-playing-track", value: o.track.name},
-                { selector: "#now-playing-track-number", value: this.index + 1},
-                { selector: "#now-playing-track-count", value: this.tracks.length},
+                { selector: "#now-playing-artist", value: o ? o.artist.name : ""},
+                { selector: "#now-playing-album", value: o ? o.album.name : ""},
+                { selector: "#now-playing-track", value: o ? o.track.name : ""},
+                { selector: "#now-playing-track-number", value: o ? this.index + 1 : "0"},
+                { selector: "#now-playing-track-count", value: o ? this.tracks.length : "0"},
             ];
 
             data.forEach(d => {
                 let e = document.querySelector(d.selector);
                 e.innerText = d.value;
             });
-
-            /*let np = document.getElementById("now-playing");
-            // ➼ 
-            np.innerText = `${o.track.name} ◆ ${o.artist.name} ◆ ${o.album.name} ◆ ${this.index + 1}/${this.tracks.length}`;*/
         }
 
         updateStorage() {
@@ -196,12 +196,17 @@
         }
 
         setNextPlaying(tracks) {
+            let index = this.tracks.length;
             this.groups.push(this.tracks.length);
             this.tracks.push(...tracks);
 
-            /*let index = this.player.paused ? this.index : this.index + 1;
-            this.tracks.splice(index, 0, ...tracks);*/
-            this.setCurrent(this.index || 0);
+            if (!this.player.paused) {
+                // If already playing, don't change that song
+                index = this.index;
+            }
+
+            // This does dual purpose of updating the UI/storage and updating the current track
+            this.setCurrent(index || 0);
         }
     }
 
@@ -221,6 +226,14 @@
             return this.wrap(this.data[this.index]);
         }
 
+        get isStart() {
+            return this.index === 0;
+        }
+
+        get isEnd() {
+            return this.index === (this.data.length - 1);
+        }
+
         setCurrent(index) {
             if (index > this.data.length - 1) {
                 index = 0;
@@ -231,6 +244,10 @@
             }
 
             this.index = index;
+        }
+
+        moveToEnd() {
+            this.setCurrent(this.data.length - 1);
         }
 
         next() {
@@ -331,6 +348,10 @@
 
         constructor(root) {
             this.stack = [root];
+            this.policy = {
+                "terminal": "ascend-descend", // "ascend-descend", "loop"
+                "one-item": "default", // "ascend-descend", "default"
+            };
         }
 
         get current() {
@@ -339,15 +360,17 @@
 
         updateUI() {
             let selectors = ["#library-artist", "#library-album", "#library-track"];
-            let s = selectors.forEach((s, n) => {
+            selectors.forEach((s, n) => {
                 let m = this.stack[n];
-                let o = { selector: s, name: m ? m.current.name : "" };
+                let o = { selector: s, name: m ? m.current.name : " " };
                 let e = document.querySelector(o.selector);
                 let selected = ((n + 1) === this.stack.length);
                 if (!selected) {
                     e.removeAttribute("data-selected"); 
                 } else {
-                    e.setAttribute("data-selected", selected); 
+                    e.setAttribute("data-selected", selected);
+                    document.querySelector("#library-current-number").innerText = `${m.index + 1}`;
+                    document.querySelector("#library-current-count").innerText = `${m.data.length}`;
                 }
                 e.innerText = o.name;
             });
@@ -359,12 +382,33 @@
         }
 
         next() {
-            this.current.next();
+            const isTerminal = this.current.isEnd;
+            if ((this.stack.length > 1) && (isTerminal) && (this.policy.terminal === "ascend-descend")) {
+                this.stack.pop();
+                this.next();
+                let result = this.current.descend();
+                if (result) {
+                    this.stack.push(result);
+                }
+            } else {
+                this.current.next();
+            }
             this.updateUI();
         }
 
         previous() {
-            this.current.previous();
+            const isTerminal = this.current.isStart;
+            if ((this.stack.length > 1) && (isTerminal) && (this.policy.terminal === "ascend-descend")) {
+                this.stack.pop();
+                this.previous();
+                let result = this.current.descend();
+                if (result) {
+                    result.moveToEnd(); // Comment to move between artists
+                    this.stack.push(result);
+                }
+            } else {
+                this.current.previous();
+            }
             this.updateUI();
         }
 
@@ -411,9 +455,17 @@
             }
         }
 
+        // Activating an album is the same as activating the first track in that album
+        // This means that if an artist only has 1 album, we can go straight to the track
+        // when descending or go straight to the artist when ascending: there's nothing different
+        // that you can do when the album is selected, so we don't have to let it be selected at all since
+        // it slows down the user.
         ascend() {
             if (this.stack.length > 1) {
                 this.stack.pop();
+                if ((this.policy["one-item"] === "ascend-descend") && (this.current.data.length === 1)) {
+                    this.ascend();
+                }
             }
             this.updateUI();
         }
@@ -422,6 +474,9 @@
             let result = this.current.descend();
             if (result) {
                 this.stack.push(result);
+                if ((this.policy["one-item"] === "ascend-descend") && (this.current.data.length === 1)) {
+                    this.descend();
+                }
             }
             this.updateUI();
         }
@@ -464,16 +519,46 @@
         }
     }
 
+    function setEnvironment(env) {
+        player.pause();
+        localStorage.setItem(getPID() + "environment", env);
+        init();
+    }
+
     function init() {
+        pid = getPID();
+
+        let env = localStorage.getItem(getPID() + "environment");
+        if (!env) {
+            env = "0";
+        }
+        pid = pid + env + "/";
+
         player = new Player(document.getElementById("player"), artists);
+        player.updateUI();
 
         let menu = new MenuStack(new ArtistsMenu(artists));
         menu.updateUI();
 
         searcher = new Searcher(menu);
 
-        function onKeyDown(key, shift) {
+        function onKeyDown(key, shift, control) {
             switch (key) {
+                case "0":
+                case "1":
+                case "2":
+                case "3":
+                case "4":
+                case "5":
+                case "6":
+                case "7":
+                case "8":
+                case "9": {
+                    if (control) {
+                        setEnvironment(key);
+                        return true;
+                    }
+                }
                 case " ": {
                     player.togglePlay();
                     return true;
@@ -525,8 +610,11 @@
         document.onkeydown = function onkeydown(evt) {
             evt = evt || window.event;
 
+            let control = evt.getModifierState("Control");
+            let shift = evt.getModifierState("Shift");
+
             let handled = false;
-            if (!evt.getModifierState("Meta") && !evt.getModifierState("Control")) {
+            if (!evt.getModifierState("Meta") && !control) {
                 if (searcher.searchConsumesSpace && evt.keyCode === 32) {
                     searcher.addToSearch(" ");
                     handled = true;
@@ -539,7 +627,7 @@
             }
 
             if (!handled) {
-                handled = onKeyDown(evt.key, evt.getModifierState("Shift"));
+                handled = onKeyDown(evt.key, shift, control);
             }
 
             if (handled) {

@@ -512,6 +512,7 @@ ${simpleAlbum.tracks.map(generateTrack).join("\n")}
     <div id="library-artist"></div>
     <div id="library-album"></div>
     <div id="library-track"></div>
+    <div id="library-current-number"></div><div id="library-current-count"></div>
     </div>
     <video id="player" src=""></video>
     </body>
