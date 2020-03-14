@@ -129,3 +129,19 @@ video {
     content: ' of ';
 }
 
+#environment {
+    position: fixed;
+    left: 93vw;
+    width: 8vh;
+    height: 8vh;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 50%;
+    border-width: thick;
+    border-color: whitesmoke;
+    border-style: solid;
+}
+
+#environment[data-name='0'] {
+    display: none;
+}

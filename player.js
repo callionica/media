@@ -534,6 +534,13 @@
         }
         pid = pid + env + "/";
 
+        (function (){
+            let e = document.getElementById("environment");
+            e.setAttribute("data-name", env);
+            e.innerText = env;
+        })();
+        
+
         player = new Player(document.getElementById("player"), artists);
         player.updateUI();
 

@@ -492,8 +492,11 @@ ${simpleAlbum.tracks.map(generateTrack).join("\n")}
             artists = simplify(fileURL, artists);
     
             return `
-    <html>
+    <!DOCTYPE html>
+    <html lang="en">
     <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Player</title>
     <link rel="stylesheet" type="text/css" href="player.css">
     <script>
@@ -502,6 +505,7 @@ ${simpleAlbum.tracks.map(generateTrack).join("\n")}
     <script src="player.js"></script>
     </head>
     <body>
+    <div id="environment"></div>
     <div id="now-playing">
     <div id="now-playing-track"></div>
     <div id="now-playing-artist"></div>
