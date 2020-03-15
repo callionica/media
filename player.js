@@ -75,11 +75,14 @@
         }
 
         updateUI() {
+            const np = document.getElementById("now-playing");
             const o = this.current;
             if (!o) {
-                document.title = `Player`;
+                document.title = `Music Player`;
+                np.setAttribute("no-content", true);
             } else {
                 document.title = `${o.track.name} - ${o.artist.name} (${this.index + 1}/${this.tracks.length})`;
+                np.removeAttribute("no-content");
             }
 
             let data = [
@@ -520,8 +523,23 @@
     }
 
     function setEnvironment(env) {
+        // Stop playing
         player.pause();
+
+        // Store the new environment
         localStorage.setItem(getPID() + "environment", env);
+
+        // Update persistence ID to the new environment
+        pid = getPID() + env + "/";
+
+        // Check if the player has ever been saved in this environment
+        // If not, save the current player to the new environment
+        let p = localStorage.getItem(pid + "player");
+        if (!p) {
+            player.updateStorage()
+        }
+
+        // Reset everything from scratch
         init();
     }
 

@@ -67,6 +67,10 @@ video {
     height: 40vh;
 }
 
+#now-playing[no-content] {
+    visibility: hidden;
+}
+
 #now-playing[playing]::before {
     content: '➼';
     position: absolute;
