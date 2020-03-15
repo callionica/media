@@ -1,5 +1,13 @@
 ## Media
 
+# player-generate.js, player.js, player.css
+These files form the basis of a music player with a simple layout and fast performance.
+player-generate.js creates player.html which contains data for the music files and loads player.js and player.css.
+player.js is the music player itself which has the following features:
+1. Shows "Now Playing" and your music library
+2. Now Playing is saved in local storage
+2. Keys: <> move through the Now Playing playlist; SPACE acts as play/pause; arrow keys move through the library; ENTER replaces Now Playing with the current artist or album; SHIFT+ENTER adds the current artist, album, or track to Now Playing; CTRL+0 - CTRL+9 takes you to different spaces or environments
+
 # media-generate.js
 
 A JXA javascript for Mac OS X that recurses through a folder gathering info for movie files and associates them with matching images and external subtitles in SRT, VTT, WEBVTT formats. The code lightly parses the directory structure and filenames to identify Show, Season Number, Episode Number, and Episode Title to produce objects or JSON describing the movies and HTML pages for browsing the collection. 
