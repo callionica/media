@@ -6,7 +6,8 @@ player-generate.js creates player.html which contains data for the music files a
 player.js is the music player itself which has the following features:
 1. Shows "Now Playing" and your music library
 2. Now Playing is saved in local storage
-2. Keys: <> move through the Now Playing playlist; SPACE acts as play/pause; arrow keys move through the library; ENTER replaces Now Playing with the current artist or album; SHIFT+ENTER adds the current artist, album, or track to Now Playing; CTRL+0 - CTRL+9 takes you to different spaces or environments
+3. Keys: <> move through the Now Playing playlist; SPACE acts as play/pause; arrow keys move through the library; ENTER replaces Now Playing with the current artist or album; SHIFT+ENTER adds the current artist, album, or track to Now Playing; CTRL+0 - CTRL+9 takes you to different spaces or environments
+4. Full text search of artists in your library: just type the name. Prefers a prefix match, and falls back to an internal match if it can't find one.
 
 # media-generate.js
 
