@@ -1,5 +1,7 @@
 "use strict";
 
+let evid;
+
 function ready(callback) {
 	// in case the document is already rendered
 	if (document.readyState != 'loading') {
@@ -19,34 +21,148 @@ function ready(callback) {
 	}
 }
 
-function togglePlay(video) {
-	video = video || document.querySelector("video");
-	if (video.paused) {
-		video.play();
-	} else {
-		video.pause();
-	}
+// TODO - clean this up
+function togglePlay() {
+	evid.togglePlay();
 }
 
-function cycleSubtitle(video) {
-	var tracks = [...video.textTracks].filter(track => track.kind === "subtitles");
-	var wasOn = false;
-	for (var index = 0; index < tracks.length; ++index) {
-		var track = tracks[index];
-		if (track.mode == "showing") {
-			track.mode = "disabled";
-			wasOn = true;
-		} else if (wasOn) {
-			track.mode = "showing";
-			return;
+class EnhancedVideo {
+	constructor(video) {
+		this.video = video;
+
+		// The index of the currently active subtitle track
+		this.subtitleIndex_ = 0;
+
+		// Whether the user wants subtitles to be displayed or not
+		this.subtitleUserVisible_ = true;
+
+		// The current subtitle visibility according to rules like don't show subtitles if paused
+		this.subtitleRuleVisible_ = true;
+	}
+
+	get subtitles() {
+		return [...this.video.textTracks].filter(track => track.kind === "subtitles");;
+	}
+
+	get subtitleIndex() {
+		return this.subtitleIndex_;
+	}
+
+	set subtitleIndex(value) {
+		if (value > this.subtitles.length - 1) {
+			value = 0;
+		}
+		if (value < 0) {
+			value = this.subtitles.length - 1;
+		}
+
+		this.subtitleIndex_ = value;
+		this.updateSubtitle();
+	}
+
+	get currentSubtitle() {
+		return this.subtitles[this.subtitleIndex];
+	}
+
+	get currentTime() {
+		return this.video.currentTime;
+	}
+
+	set currentTime(value) {
+		this.video.currentTime = value;
+	}
+
+	/*
+	Takes the current time and adjusts it backwards slightly so that it can be used
+	as the start time when playing the video. Currently we use the subtitle cues to
+	decide where to move the playhead: we position the playhead just prior to the start 
+	of the current cue. This means that we don't have big gaps without subtitles when
+	we first start a video. It also means we often end up positioning the playhead between
+	phrases so we reduce the number of cut off words.
+	(Audio analysis to position the playhead between phrases would be better, but this is easier).
+	*/
+	get currentTimeQuantized() {
+
+		function getCueForTime(cues, time) {
+			return cues.find(cue => (cue.startTime <= time) && (time <= cue.endTime));
+		}
+
+		let referenceTime = this.video.currentTime;
+		let track = this.currentSubtitle;
+		if (track && track.cues) {
+			let cues = [...track.cues];
+			let cue = getCueForTime(cues, referenceTime);
+			if (cue) {
+				const fudge = 0.001;
+				return cue.startTime - fudge;
+			}
+		}
+		return referenceTime;
+	}
+
+	updateSubtitle() {
+		// Disable all subtitles except the current track
+		let s = this.currentSubtitle;
+		this.subtitles.forEach(track => {
+			if (track !== s) {
+				if (track.mode !== "disabled") {
+					track.mode = "disabled";
+				}
+			} else {
+				track.mode = this.subtitleVisible ? "showing" : "hidden";	
+			}
+		});
+	}
+
+	get subtitleRuleVisible() {
+		return this.subtitleRuleVisible_;
+	}
+
+	set subtitleRuleVisible(value) {
+		this.subtitleRuleVisible_ = value;
+		this.updateSubtitle();
+	}
+
+	get subtitleUserVisible() {
+		return this.subtitleUserVisible_;
+	}
+
+	set subtitleUserVisible(value) {
+		this.subtitleUserVisible_ = value;
+		this.updateSubtitle();
+	}
+
+	// The effective visibility of the subtitles given user preference and rules
+	get subtitleVisible() {
+		return this.subtitleUserVisible_ && this.subtitleRuleVisible_;
+	}
+
+	togglePlay() {
+		if (this.video.paused) {
+			// Move the playhead back to the start of the current subtitle cue
+			if (evid.currentTime !== evid.currentTimeQuantized) {
+				evid.currentTime = evid.currentTimeQuantized;
+			}
+
+			// Show subtitles if hidden
+			evid.subtitleRuleVisible = true;
+
+			// Give video player a chance to catch up with our requests
+			const delay = 0.3;
+			window.setTimeout(() => {
+
+				// Start video playing
+				this.video.play();
+
+			}, delay * 1000);
+			
+		} else {
+			this.video.pause();
 		}
 	}
-	
-	if (!wasOn) {
-		var track = tracks[0];
-		if (track) {
-			track.mode = "showing";
-		}
+
+	cycleSubtitle() {
+		this.subtitleIndex += 1;
 	}
 }
 
@@ -150,6 +266,8 @@ function init() {
 	if (!video) {
 		return;
 	}
+
+	evid = new EnhancedVideo(video);
 	
 	var params = new URLSearchParams(document.location.search);
 
@@ -218,7 +336,8 @@ function init() {
 	});
 
 	video.addEventListener('pause', (event) => {
-		//document.body.setAttribute("data-playing", "false");
+		// Hide the subtitles
+		evid.subtitleRuleVisible = false;
 	});
 
 	function displayElapsed() {
@@ -245,6 +364,7 @@ function init() {
 		// If at the end of video, update the UI
 		if (video.currentTime === video.duration) {
 			document.body.setAttribute("data-playing", "false");
+			exitFullscreen();
 		}
 	});
 	
@@ -255,9 +375,9 @@ function init() {
 		// console.log(evt);
 		if (evt.keyCode == 32) { // SPACE
 			if (!evt.getModifierState("Shift")) {
-				togglePlay(video);
+				evid.togglePlay();
 			} else {   
-				cycleSubtitle(video);
+				evid.cycleSubtitle();
 			}
 			handled = true;
 		} else if (evt.keyCode == 13) { // ENTER
@@ -280,8 +400,8 @@ function init() {
 				video.currentTime = 0.0;
 			}
 			handled = true;
-		} else if (evt.key === "ClosedCaptionToggle") {
-			cycleSubtitle(video);
+		} else if ((evt.key === "ClosedCaptionToggle") || (evt.key === "s")) {
+			evid.subtitleUserVisible = !evid.subtitleUserVisible;
 			handled = true;
 		}
 		
