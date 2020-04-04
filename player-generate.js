@@ -2,7 +2,11 @@
 
 (function () {
     
-    const stage0 = "/Volumes/Yellow02/music/";
+    const stage0 = [
+        "/Volumes/Yellow02/media-itunes/iTunes Media/Music/",
+        "/Volumes/Yellow02/music/"
+    ];
+    
     const destination = "/Volumes/Yellow02/musicweb/";
     
     const skipStage1 = true;
@@ -269,7 +273,11 @@
     let s1;
 
     if (!skipStage1) {
-        let files = get_files(stage0);
+        let files = [];
+        for (let location of stage0) {
+            files.push(...get_files(location));
+        }
+        
         let audios = files.filter(is_audio);
         s1 = audios.map(metadata);
 

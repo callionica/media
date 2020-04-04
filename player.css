@@ -58,6 +58,7 @@ video {
     background-color: var(--background-color);
     max-height: 100vh;
     max-width: 100vw;
+    width: 100%;
 }
 
 #now-playing {
@@ -65,13 +66,21 @@ video {
     overflow: hidden;
     padding: 3vh;
     height: 40vh;
+    transition: font-size 0.6s ease, height 0.6s ease, padding 0.6s ease;
 }
 
-#now-playing[no-content] {
+body[data-library-unused] #now-playing {
+    height: 100vh;
+    font-size: 10vh;
+    padding: 10vh;
+    transition: font-size 0.6s ease, height 0.6s ease, padding 0.6s ease;
+}
+
+#now-playing[data-no-content] {
     visibility: hidden;
 }
 
-#now-playing[playing]::before {
+#now-playing[data-playing]::before {
     content: '➼';
     position: absolute;
     left: 1vh;
@@ -148,4 +157,50 @@ video {
 
 #environment[data-name='0'] {
     display: none;
+}
+
+body[data-volume='10'] #environment {
+    border-color: red;
+}
+body[data-volume='11'] #environment {
+    border-color: red;
+}
+body[data-volume='12'] #environment {
+    border-color: red;
+}
+body[data-volume='13'] #environment {
+    border-color: red;
+}
+body[data-volume='14'] #environment {
+    border-color: red;
+}
+body[data-volume='15'] #environment {
+    border-color: red;
+}
+body[data-volume='16'] #environment {
+    border-color: red;
+}
+body[data-volume='17'] #environment {
+    border-color: red;
+}
+body[data-volume='18'] #environment {
+    border-color: red;
+}
+body[data-volume='19'] #environment {
+    border-color: red;
+}
+body[data-volume='20'] #environment {
+    border-color: red;
+}
+body[data-volume='21'] #environment {
+    border-color: red;
+}
+body[data-volume='22'] #environment {
+    border-color: red;
+}
+body[data-volume='23'] #environment {
+    border-color: red;
+}
+body[data-volume='24'] #environment {
+    border-color: red;
 }

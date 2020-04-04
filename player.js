@@ -36,13 +36,21 @@
     let player;
     let searcher;
 
+    const volumeSegments = 24.0;
+    const volumeDifference = 1.0/volumeSegments;
+
     class Player {
         
         constructor(player, artists) {
+            const defaultVolume = 7;
+
             this.player = player;
             this.index = 0;
             this.tracks = [];
             this.groups = [];
+            this.volumeLimit_ = volumeSegments;
+            this.volume_ = defaultVolume;
+            this.player.volume = this.volume_ * volumeDifference;
 
             player.onended = ()=>{
                 this.next();
@@ -65,6 +73,9 @@
                 this.groups = saved.groups;
 
                 this.player.src = this.current.track.url;
+                this.volumeLimit_ = saved.volumeLimit || volumeSegments;
+                this.volume_ = Math.floor(saved.volume || defaultVolume);
+                this.player.volume = Math.min(this.volume_ * volumeDifference, 1.0);
 
                 this.updateUI();
             }
@@ -79,10 +90,10 @@
             const o = this.current;
             if (!o) {
                 document.title = `Music Player`;
-                np.setAttribute("no-content", true);
+                np.setAttribute("data-no-content", true);
             } else {
                 document.title = `${o.track.name} - ${o.artist.name} (${this.index + 1}/${this.tracks.length})`;
-                np.removeAttribute("no-content");
+                np.removeAttribute("data-no-content");
             }
 
             let data = [
@@ -97,6 +108,14 @@
                 let e = document.querySelector(d.selector);
                 e.innerText = d.value;
             });
+
+            let b = document.body;
+            b.setAttribute("data-volume", this.volume_);
+            if (this.volumeLimit_ < volumeSegments) {
+                b.setAttribute("data-volume-limit", this.volumeLimit_);
+            } else {
+                b.removeAttribute("data-volume-limit");
+            }
         }
 
         updateStorage() {
@@ -105,7 +124,9 @@
                 groups: this.groups,
                 tracks: this.tracks.map(track => {
                     return { artist: track.artist.name, album: track.album.name, track: track.track.name, url: track.track.url };
-                })
+                }),
+                volume: this.volume_,
+                volumeLimit: this.volumeLimit_,
             };
 
             localStorage.setItem(pid + "player", JSON.stringify(toSave, null, 2));
@@ -176,12 +197,14 @@
 
         play() {
             this.player.play();
-            document.querySelector("#now-playing").setAttribute("playing", true);
+            document.querySelector("#now-playing").setAttribute("data-playing", true);
+            document.body.setAttribute("data-playing", true);
         }
 
         pause() {
             this.player.pause();
-            document.querySelector("#now-playing").removeAttribute("playing");
+            document.querySelector("#now-playing").removeAttribute("data-playing");
+            document.body.removeAttribute("data-playing");
         }
 
         togglePlay() {
@@ -190,6 +213,27 @@
             } else {
                 this.pause();
             }
+        }
+
+        get volume() {
+            return this.volume_;
+        }
+
+        set volume(value) {
+            if (value > this.volumeLimit_) { value = this.volumeLimit_; }
+            if (value < 0.0) { value = 0.0; }
+            this.volume_ = Math.floor(value);
+            this.player.volume = Math.min(this.volume_ * volumeDifference, 1.0);
+            document.body.setAttribute("data-volume", this.volume_);
+            this.updateStorage();
+        }
+
+        volumeUp() {
+            this.volume += 1;
+        }
+
+        volumeDown() {
+            this.volume -= 1;
         }
 
         setNowPlaying(tracks, index) {
@@ -357,11 +401,19 @@
             };
         }
 
+        updateUnused() {
+            document.body.setAttribute("data-library-unused", true);
+        }
+
         get current() {
             return this.stack[this.stack.length - 1];
         }
 
         updateUI() {
+            window.clearTimeout(this.unusedTimer);
+            document.body.removeAttribute("data-library-unused");
+            this.unusedTimer = window.setTimeout(() => this.updateUnused(), 10 * 1000);
+
             let selectors = ["#library-artist", "#library-album", "#library-track"];
             selectors.forEach((s, n) => {
                 let m = this.stack[n];
@@ -593,12 +645,20 @@
                     return true;
                 }
                 case "ArrowDown": {
-                    menu.descend();
+                    if (shift) {
+                        player.volumeDown();
+                    } else {
+                        menu.descend();
+                    }
                     return true;
                 }
-                case "Backspace": // fallthrough
+                //case "Backspace": // fallthrough
                 case "ArrowUp": {
-                    menu.ascend();
+                    if (shift) {
+                        player.volumeUp();
+                    } else {
+                        menu.ascend();
+                    }
                     return true;
                 }
                 case "ArrowLeft": {
@@ -625,10 +685,10 @@
                     player.next();
                     return true;
                 }
-                /*case "Backspace": {
+                case "Backspace": {
                     window.history.back();
                     return true;
-                }*/
+                }
             }
         }
 
