@@ -75,14 +75,20 @@ function get_files(path) {
 			linkTo = url.URLByResolvingSymlinksInPath;
 			type = get_type(linkTo);
 		}
-		var mimetype = mimetype_from_type(type);
+		let mimetype = mimetype_from_type(type);
+		let extension = url.pathExtension.js;
+		if (!mimetype) {
+			if (extension === "ttml") {
+				mimetype = "application/ttml+xml";
+			}
+		}
 		return {
 			url: url.absoluteString.js,
 			linkTo: linkTo ? linkTo.absoluteString.js : undefined,
 			path: path,
 			parent: path[path.length - 2],
 			name: name_without_extension(url.lastPathComponent.js),
-			extension: url.pathExtension.js,
+			extension,
 			type,
 			mimetype
 		};
@@ -127,6 +133,75 @@ function removeSuffix(text, suffix) {
 	}
 	return text;
 }
+
+////////////////////////////////////////////////////////////////////
+
+function mdls(path) {
+
+        function decode(value) {
+            value = value.replace(/\\U/g, "\\u");
+			let json = `{ "result" : ${value} }`;
+            return JSON.parse(json).result;
+        }
+
+        function cleanupName(name) {
+            if (name.startsWith("kMDItem")) {
+                name = name.substring("kMDItem".length);
+            }
+            return name;
+        }
+
+        function cleanupValue(value) {
+            if (value.endsWith(",")) {
+                value = value.substring(0, value.length - 1);
+            }
+
+            if (value.startsWith('"')) {
+                value = decode(value);
+            }
+
+            return value;
+        }
+
+        let text = app.doShellScript(`mdls "${path}"`);
+        let lines = text.split("\r");
+
+        let state = "property"; // "property", "list"
+        let name;
+        let value;
+
+        let result = {};
+        for (let line of lines) {
+            switch (state) {
+                case "property":{
+                    [name, value] = line.split("=");
+                    name = cleanupName(name.trim());
+                    value = value.trim();
+                    if (value === "(") {    
+                        state = "list";
+                        value = [];
+                        result[name] = value;
+                    } else if (value === "(null)") {
+                        // Do nothing
+                    } else {
+                        console.log(value);
+                        result[name] = cleanupValue(value);
+                    }
+                    break;
+                }
+                case "list": {
+                    let v = line.trim();
+                    if (v === ")") {
+                        state = "property";
+                    } else {
+                        value.push(cleanupValue(v));
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
 
 ////////////////////////////////////////////////////////////////////
 
@@ -319,10 +394,12 @@ function get_media_groups(files) {
 	});
 	
 	// TODO - sort within containers & sort articles
-	var movies    = files.filter(file => file.category == "movie").sort((a, b) => { return a.name.localeCompare(b.name, "en", { numeric: true }); });
+	var movies    = files.filter(file => (file.category == "movie") || (file.category == "audio")).sort((a, b) => { return a.name.localeCompare(b.name, "en", { numeric: true }); });
 	var subtitles = files.filter(file => file.category == "subtitle");
 	var images    = files.filter(file => file.category == "image");
 	var texts     = files.filter(file => file.category == "text");
+	
+	// var audios    = files.filter(file => file.category == "audio");
 
 	movies.forEach(movie => {
 
@@ -334,8 +411,9 @@ function get_media_groups(files) {
 		// "01.mp4" // Episode
 		var possibles = [
 			/^((?<show>.*) - )?Series (?<season>\d{1,4}) - (?<episode>Episode (?<episodeNumber>\d{1,4}))$/ig,
-			/^((?<show>.*) - )?Series (?<season>\d{1,4}) - (?<episodeNumber>\d{1,4})[.]?\s*(?<episode>.*)$/ig,
+			/^((?<show>.*) - )?Series (?<season>\d{1,4}) - (Episode )?(?<episodeNumber>\d{1,4})[.]?\s*(?<episode>.*)$/ig,
 			/^((?<show>.*) - )?Series (?<season>\d{1,4}) - (?<episode>.*)$/ig,
+			/^((?<show>.*) - )?(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})\s*(?<episode>.*)$/ig,
 			/^((?<show>.*) - )?(?<season>\d{1,4})-(?<episodeNumber>\d{1,4})\s*(?<episode>.*)$/ig,
 			/^((?<show>.*) - )?(?<episodeNumber>\d{1,4})[.]?\s*(?<episode>.*)$/ig,
 			/^((?<show>.*) - )?(?<episode>Episode (?<episodeNumber>\d{1,4}))$/ig,
@@ -354,6 +432,14 @@ function get_media_groups(files) {
 				var a = m.groups.season;
 				var b = m.groups.episodeNumber;
 				var c = m.groups.episode;
+				
+				if (m.groups.year) {
+					a = m.groups.year;
+				}
+				
+				if (m.groups.month && m.groups.day) {
+					b = m.groups.month + m.groups.day;
+				}
 				
 				if (t == null) {
 					t = movie.container;
@@ -595,7 +681,7 @@ function get_movie_links(group, destination) {
 		});
 	});
 	
-	var display_season = (lowest_season != highest_season) || multiple_shows || ((lowest_season != 1) && !group.subcontainer);
+	var display_season = (lowest_season != highest_season) || multiple_shows || ((lowest_season && (lowest_season != 1)) && !group.subcontainer);
 	return {
 		location: location,
 		container: group.container,
@@ -645,10 +731,12 @@ function group_page(p) {
 	var poster = poster_ ? poster_.url : `${dots}/generic-poster.jpg`;
 	var movies = p.movies.map(group => {
 		var movie = group[0];
-		return `<div><a href="${idx_doc(movie.link)}"><span class="season">${movie.season || ""}</span><span class="episode">${movie.episode || ""}</span><span class="name">${movie.name}</span></a></div>`;
+		return `<a href="${idx_doc(movie.link)}"><span class="season">${movie.season || ""}</span><span class="episode">${movie.episode || ""}</span><span class="name">${movie.name}</span></a>`;
 		
 	}).join("\n");
 
+	var hideSeason = p.display_season ? "" : "data-hide-season";
+	
 	var html = 
 	`<html>
 	<head>
@@ -662,7 +750,7 @@ function group_page(p) {
 	<script src="${dots}/container-script.js"></script>
 	<script type="application/json">${json}</script>
 	</head>
-	<body data-page="group">
+	<body data-page="group" ${hideSeason}>
 	<h1>${title}</h1>
 	<div id="sidebar"><img src=${poster}></div>
 	<div id="content">
@@ -820,9 +908,10 @@ function ttml2vtt(subs) {
 		{ find: /<span tts:color="([^"]*)"[^>]*>/g, replace: "<c.$1>" },
 		{ find: /<span [^>]*>/g, replace: "<c>" },
 		{ find: /<\/span>/g, replace: "</c>" },
-		{ find: /<br \/>/g, replace: "\n" },
+		{ find: /<br\s*\/>/g, replace: "\n" },
 		{ find: /&#163;/g, replace: "£" },
-		
+		{ find: /&#39;/g, replace: "'" },
+		{ find: /&#34;/g, replace: `"` },
 	];
 	
 	function strip(sub) {
