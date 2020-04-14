@@ -352,10 +352,10 @@ body[data-playing="true"] .play {
 
 .duration {
     display: inline-block;
+    margin-left: 3vw;
 }
 
 .duration:before {
-    margin-left: 3vw;
     content: 'Duration: ';
 }
 
@@ -441,22 +441,23 @@ li>* {
 .season {
     padding-right: 1vw;
 }
-.season::before {
+.season:not(:empty)::before {
     content: "S";
-}
-.season:empty {
-    display: none;
+    color: var(--gray2);
 }
 
 .episode {
     padding-right: 1vw;
 }
+/* If there's an episode, prefix it with E...*/
 .episode:not(:empty)::before {
     content: "E";
+    color: var(--gray2);
 }
-/*.episode:empty {
-    display: none;
-}*/
+/* ...unless we're not showing the season, in which case the number is sufficient */
+body[data-hide-season] .episode::before {
+    content: "";
+}
 
 body[data-page='group'] {
     padding: 3vw;
@@ -464,4 +465,30 @@ body[data-page='group'] {
 
 body[data-page='groups'] {
     padding: 3vw;
+}
+
+body[data-page='group'] #content {
+    display: table;
+}
+
+body[data-page='group'] #content a {
+    display: table-row;
+}
+
+body[data-page='group'] #content .season {
+    display: table-cell;
+    width: auto;
+}
+
+body[data-page='group'][data-hide-season] #content .season {
+    display: none;
+}
+
+body[data-page='group'] #content .episode {
+    display: table-cell;
+    width: auto;
+}
+
+body[data-page='group'] #content .name {
+    display: table-cell;
 }

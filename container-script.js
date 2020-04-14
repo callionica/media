@@ -160,11 +160,16 @@ function simpleTitle(text) {
 Focus the first A whose text starts with the specified prefix, otherwise the first A whose text includes the specified text
 */
 function focusByPrefix(prefix) {
+
+	function getText(a) {
+		return a.textContent;
+	}
+
 	var lower = prefix.toLowerCase();
 	var targets = [...document.querySelectorAll("a")];
-	var nextElement = targets.find(t => simpleTitle(t.innerText).toLowerCase().startsWith(lower));
+	var nextElement = targets.find(t => simpleTitle(getText(t)).toLowerCase().startsWith(lower));
 	if (!nextElement) {
-		nextElement = targets.find(t => t.innerText.toLowerCase().includes(lower));
+		nextElement = targets.find(t => getText(t).toLowerCase().includes(lower));
 	}
 	if (nextElement) {
 		nextElement.focus();
@@ -222,7 +227,7 @@ function init() {
 					e.click();
 				}
 			}
-		} else if (((65 <= evt.keyCode) && (evt.keyCode < 65+26)) || ((48 <= evt.keyCode) && (evt.keyCode < 48+10))) {
+		} else if ((!evt.getModifierState("Meta") && !evt.getModifierState("Control")) && (((65 <= evt.keyCode) && (evt.keyCode < 65+26)) || ((48 <= evt.keyCode) && (evt.keyCode < 48+10)))) {
 			var letter = String.fromCharCode(evt.keyCode); // works in this range
 			addToSearch(letter);
 		}

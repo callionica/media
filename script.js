@@ -87,11 +87,51 @@ class EnhancedVideo {
 			return cues.find(cue => (cue.startTime <= time) && (time <= cue.endTime));
 		}
 
+		let re = /^\p{Uppercase_Letter}$/u;
+
+		function isUpperCaseLetter(ch) {
+			return !!ch.match(re);
+		}
+
+		function startOfSentence(cues, index, time, limit) {
+			// Work our way backwards through the cues until we find one
+			// that starts with an uppercase letter or until we exceed our time limit
+			const e = document.createElement("div");
+			for (; index >= 0; --index) {
+				const cue = cues[index];
+				if ((time - cue.startTime) > limit) {
+					return undefined;
+				}
+				// We do this to strip markup from the cue's text
+				e.innerHTML = cue.text;
+				const cueText = e.textContent;
+				const first = cueText[0];
+				const isStart = first && isUpperCaseLetter(first);
+				if (isStart) {
+					return cue;
+				}
+			}
+			return undefined;
+		}
+
+		function getCueForTimeAndSentence(cues, time) {
+			// Allow us to go back to a previous cue some number of seconds in the past
+			const limit = 15.0;
+			const index = cues.findIndex(cue => (cue.startTime <= time) && (time <= cue.endTime));
+			if (index >= 0) {
+				const start = startOfSentence(cues, index, time, limit);
+				if (start) {
+					return start;
+				}
+				return cues[index];
+			}
+		}
+
 		let referenceTime = this.video.currentTime;
 		let track = this.currentSubtitle;
 		if (track && track.cues) {
 			let cues = [...track.cues];
-			let cue = getCueForTime(cues, referenceTime);
+			let cue = getCueForTimeAndSentence(cues, referenceTime);
 			if (cue) {
 				const fudge = 0.001;
 				return cue.startTime - fudge;
