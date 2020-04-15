@@ -48,9 +48,9 @@ CMFS regular expressions can provide the following items of data:
 
 Of these, only a name is required to be able to display a media item and if no regular expression matches, the entire filename will be used as the name.
 
-## Recommendations
+## Storage Recommendations
 
-There are two main recommended ways of laying out media files: flat and hierarchical.
+There are two main recommended ways of storing media files: flat and hierarchical.
 
 The flat layout puts the group, subgroup, number, and name directly in the filename. Typically, it will also separate files into folders based on the group.
 
@@ -66,7 +66,7 @@ Doctor Who/
   Season 1/
     01 Rose.mp4
 ```
- CMFS allows hybrids between flat and hierarchical layouts.
+ CMFS allows hybrids between flat and hierarchical storage options.
 
 
 ## Examples
