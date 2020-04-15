@@ -27,7 +27,7 @@ A **group** is the major grouping for media items. For example, a show (for tele
 
 A **group satellite item** is a file in the same folder as the media item or in the parent of that folder whose name is prefixed by the name of the group followed by a period.
 
-A **subgroup** is the minor grouping for media items. For example, a season (for television) or an album (for music) or the book (for an audiobook). The subgroup is recognized by using a regular expression to parse the media item's filename. If no subgroup is recognized from the file name, the name of the parent folder is the name of the group.
+A **subgroup** is the minor grouping for media items. For example, a season (for television) or an album (for music) or the book (for an audiobook). The subgroup is recognized by using a regular expression to parse the media item's filename. If no subgroup is recognized from the file name, the name of the parent folder is the name of the subgroup.
 
-A **subgroup satellite item** is a file in the same folder as the media item or in the parent of that folder whose name is prefixed by the name of the group followed by a period.
+A **subgroup satellite item** is a file in the same folder as the media item or in the parent of that folder whose name is prefixed by the name of the subgroup followed by a period.
 
