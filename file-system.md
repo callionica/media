@@ -29,6 +29,10 @@ A **group satellite item** is a file in the same folder as the media item or in 
 
 A **subgroup** is the minor grouping for media items. For example, a season (for television) or an album (for music) or the book (for an audiobook). The subgroup is recognized by using a regular expression to parse the media item's filename. If no subgroup is recognized from the file name, the name of the parent folder is the name of the subgroup.
 
+If the name of the subgroup was obtained from the parent folder, and the name of the group is the same as the name of the subgroup, but the name of the group is different from the name of the grandparent folder, there is no subgroup.
+
+_Consider two cases: 1) Nested folders with an artist and an eponymous album 2) A single folder for the artist with audio files which also contain the artist name, but not the album name. In the first case, we want to allow group and subgroup to have the same name - we clearly have both. In the second case, we want to recognise that we don't have a subgroup._
+
 A **subgroup satellite item** is a file in the same folder as the media item or in the parent of that folder whose name is prefixed by the name of the subgroup followed by a period.
 
 ## Examples
