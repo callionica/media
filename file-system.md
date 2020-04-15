@@ -35,6 +35,19 @@ _Consider two cases: 1) Nested folders with an artist and an eponymous album 2) 
 
 A **subgroup satellite item** is a file in the same folder as the media item or in the parent of that folder whose name is prefixed by the name of the subgroup followed by a period.
 
+## Regular expressions
+
+CMFS does not constrain which particular regular expressions to apply to file names to extract data, but it does apply the regular expression to only the file name (not the full path) of media files.
+
+CMFS regular expressions can provide the following items of data:
+1. group (e.g. Artist, Author, Show)
+2. subgroup (e.g. Album, Book, Season)
+3. number (e.g. Track number, Chapter number, Episode number)
+4. date (e.g. Publication date)
+5. name (e.g. Track name, Chapter name, Episode name)
+
+Of these, only name is required.
+
 ## Examples
 
 ```
