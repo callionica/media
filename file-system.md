@@ -13,7 +13,7 @@ It works like this:
 A **media item** is an audio or video file.
 An audio or video file is recognized by its file exension.
 
-A **satellite item** is a text, image, subtitle, or other file whose name is prefixed by the name of a media item followed by a period.
+A **satellite item** is a text, image, subtitle, or other file whose name is prefixed by the name of a media item followed by a period. (The period can serve double duty as the separator between the file name and the file extension).
 
 A **tag list** is a period-separated list of tags that can appear as a suffix to the file name of a satellite item.
 
@@ -37,7 +37,7 @@ A **subgroup satellite item** is a file in the same folder as the media item or 
 
 ## Regular expressions
 
-CMFS does not constrain which particular regular expressions to apply to file names to extract data, but it does apply the regular expression to only the file name (not the full path) of media files.
+CMFS applies regular expressions to extract data. CMFS applies each regular expression to only the file name (not the full path) of media files. CMFS does not constrain which particular regular expressions to apply to file names to extract data.
 
 CMFS regular expressions can provide the following items of data:
 1. group (e.g. Artist, Author, Show)
@@ -46,7 +46,28 @@ CMFS regular expressions can provide the following items of data:
 4. date (e.g. Publication date)
 5. name (e.g. Track name, Chapter name, Episode name)
 
-Of these, only name is required.
+Of these, only a name is required to be able to display a media item and if no regular expression matches, the entire filename will be used as the name.
+
+## Recommendations
+
+There are two main recommended ways of laying out media files: flat and hierarchical.
+
+The flat layout puts the group, subgroup, number, and name directly in the filename. Typically, it will also separate files into folders based on the group.
+
+```
+Doctor Who/
+  Doctor Who - 01-01 Rose.mp4
+```
+
+The hierarchical layout uses folders for both group and subgroup and does not repeat those pieces of information in the filename.
+
+```
+Doctor Who/
+  Season 1/
+    01 Rose.mp4
+```
+ CMFS allows hybrids between flat and hierarchical layouts.
+
 
 ## Examples
 
@@ -80,9 +101,10 @@ This gives:
 1. Media item: Film Series - Episode Name.mp4
 2. Media item satellite: Film Series - Episode Name.jpg (it shares a name with the media item)
 3. Collection: Film Series (the parent folder of the media item)
-4. Group: Film Series (because the group can be parsed from the filename Film Series - Episode Name.mp4)
-5. Group satellite: Film Series.jpg (it shares a name with the group)
-6. Subgroup & subgroup satellite: None (the subgroup would be obtained from the parent folder, but it's the same name as the group and the grandparent folder doesn't match the group name)
+4. Collection satellite: Film Series.jpg (it shares a name with the collection)
+5. Group: Film Series (because the group can be parsed from the filename Film Series - Episode Name.mp4)
+6. Group satellite: Film Series.jpg (it shares a name with the group)
+7. Subgroup & subgroup satellite: None (the subgroup would be obtained from the parent folder, but it has the same name as the group and the grandparent folder doesn't match the group name, so there is no subgroup)
 
 ```
 Collection/
