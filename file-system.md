@@ -31,3 +31,57 @@ A **subgroup** is the minor grouping for media items. For example, a season (for
 
 A **subgroup satellite item** is a file in the same folder as the media item or in the parent of that folder whose name is prefixed by the name of the subgroup followed by a period.
 
+## Examples
+
+```
+Artist/
+  Artist.jpg
+  Artist.txt
+  Album/
+    Track 01.m4a
+    Track 01.jpg
+ ```
+ 
+This gives:
+1. Media item: Track 01.m4a
+2. Media item satellite: Track 01.jpg (it shares a name with the media item)
+3. Collection: Album (the parent folder of the media item)
+4. Group: Artist (because the group cannot be parsed from the filename Track 01.m4a, so we look at grandparent folder)
+5. Group satellite: Artist.jpg (it shares a name with the group)
+6. Subgroup: Album (because the subgroup cannot be parsed from the filename Track 01.m4a, so we look at parent folder)
+ 
+ 
+ ```
+Film Series.jpg
+Film Series/
+  Film Series - Episode Name.mp4
+  Film Series - Episode Name.jpg
+ ```
+
+This gives:
+1. Media item: Film Series - Episode Name.mp4
+2. Media item satellite: Film Series - Episode Name.jpg (it shares a name with the media item)
+3. Collection: Film Series (the parent folder of the media item)
+4. Group: Film Series (because the group can be parsed from the filename Film Series - Episode Name.mp4)
+5. Group satellite: Film Series.jpg (it shares a name with the group)
+6. Subgroup & subgroup satellite: Same as group
+
+```
+Collection/
+  TV Show - 01-01 Episode.mp4
+  TV Show.jpg
+  Another TV Show - 01-01 Episode.mp4
+```
+
+This gives:
+1. Media items: TV Show - 01-01 Episode.mp4 and Another TV Show - 01-01 Episode.mp4
+
+
+For TV Show - 01-01 Episode.mp4:
+1. Collection: Collection (the parent folder of the media item)
+2. Group: TV Show (by parsing)
+3. Group satellite: TV Show.jpg (it shares a name with the group)
+4. Subgroup: Season 1 (by parsing)
+
+    
+    
