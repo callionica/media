@@ -56,10 +56,11 @@ This gives:
  
  
  ```
-Film Series.jpg
-Film Series/
-  Film Series - Episode Name.mp4
-  Film Series - Episode Name.jpg
+Movies/
+  Film Series.jpg
+  Film Series/
+    Film Series - Episode Name.mp4
+    Film Series - Episode Name.jpg
  ```
 
 This gives:
@@ -68,7 +69,7 @@ This gives:
 3. Collection: Film Series (the parent folder of the media item)
 4. Group: Film Series (because the group can be parsed from the filename Film Series - Episode Name.mp4)
 5. Group satellite: Film Series.jpg (it shares a name with the group)
-6. Subgroup & subgroup satellite: Same as group
+6. Subgroup & subgroup satellite: None (the subgroup would be obtained from the parent folder, but it's the same name as the group and the grandparent folder doesn't match the group name)
 
 ```
 Collection/
