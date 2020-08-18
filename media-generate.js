@@ -415,7 +415,7 @@ function get_media_groups(files) {
 			/^((?<show>.*) - )?Series (?<season>\d{1,4}) - (?<episode>.*)$/ig,
 			/^((?<show>.*) - )?(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})\s*(?<episode>.*)$/ig,
 			/^((?<show>.*) - )?(?<season>\d{1,4})-(?<episodeNumber>\d{1,4})\s*(?<episode>.*)$/ig,
-			/^((?<show>.*) - )?(?<episodeNumber>\d{1,4})[.]?\s*(?<episode>.*)$/ig,
+			/^((?<show>.*) - )?(?<episodeNumber>\d{1,4})[.]?\s*(-)?\s*(?<episode>.*)$/ig,
 			/^((?<show>.*) - )?(?<episode>Episode (?<episodeNumber>\d{1,4}))$/ig,
 		];
 		
@@ -889,6 +889,9 @@ function* matchAll(str, regex) {
 }
 
 function ttml2vtt(subs) {
+	/* Make sure paragraphs are on separate lines so that regex works */
+	subs = subs.replace(/<\/p><p/g, "</p>\n<p");
+	
 	/*
 	This is a hugely hacky way to convert TTML to VTT, but it works for our limited inputs
 	THIS IS A HUGE HACK THAT DROPS USEFUL FEATURES OF TTML AND WONT WORK WITH ALL INPUTS
