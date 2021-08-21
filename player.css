@@ -54,6 +54,10 @@ body {
     padding: 4vh;
 }
 
+h1 {
+    font-size: 4rem;
+}
+
 video {
     background-color: var(--background-color);
     max-height: 100vh;
