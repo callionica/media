@@ -59,6 +59,10 @@ h1 {
     font-size: 1.2rem;
 }
 
+h2 {
+    font-size: 0.9rem;
+}
+
 video {
     background-color: var(--background-color);
     max-height: 100vh;
