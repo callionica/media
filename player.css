@@ -213,3 +213,5 @@ body[data-volume='23'] #environment {
 body[data-volume='24'] #environment {
     border-color: red;
 }
+
+.latest::after { content: " ←"; grid-area: decoration; }
