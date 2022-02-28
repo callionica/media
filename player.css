@@ -72,7 +72,7 @@ video {
 
 div#content > p > a {
     display: grid;
-    grid-template: "article title decoration" / 2.5rem 1fr 2rem;
+    grid-template: "article title decoration" / 1rem 1fr 2rem;
 }
 
 .article {
