@@ -70,6 +70,28 @@ video {
     width: 100%;
 }
 
+div#content > p > a {
+    display: grid;
+    grid-template: "article title decoration" / 2.5rem 1fr 2rem;
+}
+
+.article {
+    grid-area: article;
+    text-align: right;
+    white-space: pre;
+}
+
+.article {
+    vertical-align: super;
+    font-size: 0.5rem;
+    color: var(--gray1);
+}
+
+.title {
+    grid-area: title;
+}
+
+
 #now-playing {
     white-space: nowrap;
     overflow: hidden;
