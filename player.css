@@ -89,6 +89,7 @@ div#content > p > a {
 
 .title {
     grid-area: title;
+    text-indent: -1rem; margin-left: 1rem;
 }
 
 
