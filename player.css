@@ -72,7 +72,7 @@ video {
 
 div#content > p > a {
     display: grid;
-    grid-template: "article title decoration" / 1rem 1fr 2rem;
+    grid-template: "article title decoration" / 1rem 1fr 1rem;
 }
 
 .article {
@@ -90,6 +90,24 @@ div#content > p > a {
 .title {
     grid-area: title;
     text-indent: -1rem; margin-left: 1rem;
+}
+
+.group {
+    font-size: 0.75rem;
+    color: var(--gray1);
+    border-top: 0.025rem solid whitesmoke;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.subgroup {
+    font-size: 0.75rem;
+    color: var(--gray1);
+    border-top: 0.025rem solid whitesmoke;
+    margin-top: 0.25rem;
+    padding-top: 0.25rem;
+    margin-bottom: 0.25rem;
 }
 
 
