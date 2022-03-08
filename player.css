@@ -93,7 +93,8 @@ div#content > p > a {
 }
 
 .group {
-    font-size: 0.75rem;
+    font-size: 1.15rem;
+    font-weight: bold;
     color: var(--gray1);
     border-top: 0.025rem solid whitesmoke;
     margin-top: 0.5rem;
