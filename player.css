@@ -72,7 +72,7 @@ video {
 
 div#content > p > a {
     display: grid;
-    grid-template: "article title decoration" / 1rem 1fr 1rem;
+    grid-template: "article title decoration" / 1rem 1fr 0.5rem;
 }
 
 .article {
@@ -111,6 +111,24 @@ div#content > p > a {
     margin-bottom: 0.25rem;
 }
 
+.one-image {
+    margin: -4vh; /* Reverses effect of body padding*/
+    margin-bottom: -10vh;
+    width: 100vw;
+    height: min(56.25vw, 100vh);
+    /* height: 9rem; width: 16rem;  */
+    object-fit: cover;
+}
+
+.item-image {
+    width: 100vw;
+    height: min(56.25vw, 100vh);
+    margin-left: -4vh; /* Reverses effect of body padding*/
+    margin-right: -4vh; /* Reverses effect of body padding*/
+    margin-bottom: 6vh;
+    margin-top: 2vh;
+    object-fit: cover;
+}
 
 #now-playing {
     white-space: nowrap;
