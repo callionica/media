@@ -81,11 +81,13 @@ div#content > p > a {
     white-space: pre;
 }
 
-.article {
+.head .article {
     vertical-align: super;
     font-size: 0.5rem;
     color: var(--gray1);
 }
+
+
 
 .title {
     grid-area: title;
