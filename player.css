@@ -111,7 +111,7 @@ div#content > p > a {
     margin-bottom: 0.25rem;
 }
 
-.one-image {
+.main-image {
     margin: -4vh; /* Reverses effect of body padding*/
     margin-bottom: -10vh;
     width: 100vw;
@@ -128,6 +128,10 @@ div#content > p > a {
     margin-bottom: 6vh;
     margin-top: 2vh;
     object-fit: cover;
+}
+
+body[data-image-count='one'] .item-image {
+    display: none;
 }
 
 #now-playing {
