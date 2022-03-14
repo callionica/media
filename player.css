@@ -134,6 +134,10 @@ body[data-image-count='one'] .item-image {
     display: none;
 }
 
+body[data-no-item-images='one'] .item-image {
+    display: none;
+}
+
 #now-playing {
     white-space: nowrap;
     overflow: hidden;
