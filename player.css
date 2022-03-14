@@ -101,6 +101,10 @@ div#content > p > a {
     left: 0;
 }
 
+.item-description {
+    white-space: pre-wrap;
+    font-size: 0.5rem;
+}
 
 
 .title {
