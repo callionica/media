@@ -97,6 +97,7 @@ div#content > p > a {
 
 .folder-title .subhead {
     display: block;
+    font-size: 0.75rem;
 }
 
 .item-title .head {
@@ -120,21 +121,51 @@ div#content > p > a {
     display: none;
 }
 
+.folder {
+    position: relative;
+}
+
 .item {
     position: relative;
+}
+
+.folder-title {
+    position: absolute;
+    top: min(56.25vw, 100vh);
+    transform: translateY(-100%);
+    background-color: rgba(0, 0, 0, 0.35);
+
+    width: 100vw;
+    
+    margin-top: -4vh; /* Reverses effect of body padding*/
+    margin-left: -4vh; /* Reverses effect of body padding*/
+    margin-right: -4vh; /* Reverses effect of body padding*/
+
+    padding-left: 4vh;
 }
 
 body[data-image-count="many"] .item-title {
     position: absolute;
     top: min(56.25vw, 100vh);
     transform: translateY(-100%);
-    /* width: 100%; */
     background-color: rgba(0, 0, 0, 0.35);
 
     width: 100vw;
+    
     margin-left: -4vh; /* Reverses effect of body padding*/
-    padding-left: 4vh;
     margin-right: -4vh; /* Reverses effect of body padding*/
+
+    padding-left: 4vh;
+}
+
+
+.folder-image {
+    width: 100vw;
+    height: min(56.25vw, 100vh);
+    margin-left: -4vh; /* Reverses effect of body padding*/
+    margin-right: -4vh; /* Reverses effect of body padding*/
+    margin-top: -4vh; /* Reverses effect of body padding*/
+    object-fit: cover;
 }
 
 .item-image {
@@ -185,15 +216,6 @@ body[data-image-count="many"] .item-title {
     margin-top: 0.25rem;
     padding-top: 0.25rem;
     margin-bottom: 0.25rem;
-}
-
-.main-image {
-    margin: -4vh; /* Reverses effect of body padding*/
-    margin-bottom: -10vh;
-    width: 100vw;
-    height: min(56.25vw, 100vh);
-    /* height: 9rem; width: 16rem;  */
-    object-fit: cover;
 }
 
 
