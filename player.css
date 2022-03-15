@@ -87,6 +87,22 @@ div#content > p > a {
     color: var(--gray1);
 }
 
+.folder-title .head {
+    display: block;
+}
+
+.folder-title .subhead-separator {
+    display: none;
+}
+
+.folder-title .subhead {
+    display: block;
+}
+
+.group-title[data-folder-match] {
+    display: none;
+}
+
 .item {
     position: relative;
 }
@@ -116,7 +132,7 @@ div#content > p > a {
     font-size: 1.15rem;
     font-weight: bold;
     color: var(--gray1);
-    border-top: 0.025rem solid whitesmoke;
+    /* border-top: 0.025rem solid whitesmoke; */
     margin-top: 0.5rem;
     padding-top: 0.5rem;
     margin-bottom: 0.25rem;
@@ -125,7 +141,7 @@ div#content > p > a {
 .subgroup {
     font-size: 0.75rem;
     color: var(--gray1);
-    border-top: 0.025rem solid whitesmoke;
+    /* border-top: 0.025rem solid whitesmoke; */
     margin-top: 0.25rem;
     padding-top: 0.25rem;
     margin-bottom: 0.25rem;
