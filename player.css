@@ -99,12 +99,52 @@ div#content > p > a {
     display: block;
 }
 
+.item-title .head {
+    display: block;
+}
+
+.item-title .subhead-separator {
+    display: none;
+}
+
+.item-title .subhead {
+    display: block;
+    font-size: 0.5rem;
+}
+
 .group-title[data-folder-match] {
+    display: none;
+}
+
+.subgroup-title[data-folder-match] {
     display: none;
 }
 
 .item {
     position: relative;
+}
+
+.item-title {
+    position: absolute;
+    top: min(56.25vw, 100vh);
+    transform: translateY(-100%);
+    /* width: 100%; */
+    background-color: rgba(0, 0, 0, 0.35);
+
+    width: 100vw;
+    margin-left: -4vh; /* Reverses effect of body padding*/
+    padding-left: 4vh;
+    margin-right: -4vh; /* Reverses effect of body padding*/
+}
+
+.item-image {
+    width: 100vw;
+    height: min(56.25vw, 100vh);
+    margin-left: -4vh; /* Reverses effect of body padding*/
+    margin-right: -4vh; /* Reverses effect of body padding*/
+    /* margin-bottom: 6vh; */
+    margin-top: 2vh;
+    object-fit: cover;
 }
 
 /* Links are overlaid on the item for reasons */
@@ -156,15 +196,7 @@ div#content > p > a {
     object-fit: cover;
 }
 
-.item-image {
-    width: 100vw;
-    height: min(56.25vw, 100vh);
-    margin-left: -4vh; /* Reverses effect of body padding*/
-    margin-right: -4vh; /* Reverses effect of body padding*/
-    margin-bottom: 6vh;
-    margin-top: 2vh;
-    object-fit: cover;
-}
+
 
 body[data-image-count='one'] .item-image {
     display: none;
