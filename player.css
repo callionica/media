@@ -100,6 +100,11 @@ div#content > p > a {
     font-size: 0.75rem;
 }
 
+.folder-title .prehead {
+    display: block;
+    font-size: 0.75rem;
+}
+
 .item-title .head {
     display: block;
 }
@@ -109,6 +114,11 @@ div#content > p > a {
 }
 
 .item-title .subhead {
+    display: block;
+    font-size: 0.5rem;
+}
+
+.item-title .prehead {
     display: block;
     font-size: 0.5rem;
 }
