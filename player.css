@@ -123,6 +123,10 @@ div#content > p > a {
     font-size: 0.5rem;
 }
 
+.item-description {
+    font-weight: normal;
+}
+
 .group-title[data-folder-match] {
     display: none;
 }
