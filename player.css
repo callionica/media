@@ -176,7 +176,7 @@ body[data-image-count="many"] .item-title {
     font-size: 0.5rem;
     font-weight: normal;
     /* color: var(--background-color); */
-    border-color: var(--color);
+    border-color: var(--gray-1);
     border-width: 0.05rem;
     border-style: solid;
     border-radius: 0.15rem;
@@ -188,6 +188,14 @@ body[data-image-count="many"] .item-title {
 
 .item-categories[data-same-as-folder="true"] {
     display: none;
+}
+
+/* First category in top right of image */
+.item-categories .category:first-of-type {
+    position: absolute;
+    top: 0.75rem;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.35);
 }
 
 .folder-image {
