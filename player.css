@@ -172,6 +172,23 @@ body[data-image-count="many"] .item-title {
     padding-left: 4vh;
 }
 
+.category {
+    font-size: 0.5rem;
+    font-weight: normal;
+    /* color: var(--background-color); */
+    border-color: var(--color);
+    border-width: 0.05rem;
+    border-style: solid;
+    border-radius: 0.15rem;
+    margin-right: 0.25rem;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+
+}
+
+.item-categories[data-same-as-folder="true"] {
+    display: none;
+}
 
 .folder-image {
     width: 100vw;
@@ -179,7 +196,7 @@ body[data-image-count="many"] .item-title {
     margin-left: -4vh; /* Reverses effect of body padding*/
     margin-right: -4vh; /* Reverses effect of body padding*/
     margin-top: -4vh; /* Reverses effect of body padding*/
-    object-fit: cover;
+    object-fit: contain;
 }
 
 .item-image {
@@ -189,10 +206,15 @@ body[data-image-count="many"] .item-title {
     margin-right: -4vh; /* Reverses effect of body padding*/
     /* margin-bottom: 6vh; */
     margin-top: 2vh;
-    object-fit: cover;
+    object-fit: contain;
 }
 
 /* Links are overlaid on the item for reasons */
+
+.item-link-box {
+    position: relative;
+}
+
 .item-link {
     opacity: 0;
     position: absolute;
