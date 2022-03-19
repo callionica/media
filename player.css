@@ -194,7 +194,7 @@ body[data-image-count="many"] .item-title {
 .item-categories .category:first-of-type {
     position: absolute;
     top: 0.75rem;
-    right: 0;
+    right: -0.75rem;
     background-color: rgba(0, 0, 0, 0.35);
 }
 
