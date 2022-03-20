@@ -198,10 +198,21 @@ html {
 }
 
 /* First category in top right of image */
-.item-categories .category:first-of-type {
+/* .item-categories .category:first-of-type {
     position: absolute;
     top: 0.75rem;
     right: -0.75rem;
+    background-color: rgba(0, 0, 0, 0.35);
+} */
+
+/* All categories in top right of image */
+.item-categories {
+    position: absolute;
+    top: 0.75rem;
+    right: -0.75rem;
+}
+
+.category {
     background-color: rgba(0, 0, 0, 0.35);
 }
 
