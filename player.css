@@ -205,6 +205,12 @@ html {
     background-color: rgba(0, 0, 0, 0.35);
 }
 
+/* TODO - proper text truncation or sizing */
+.item-description {
+    max-height: 5rem;
+    overflow-y: scroll;
+}
+
 .folder-image {
     width: 100vw;
     height: min(56.25vw, 100vh);
