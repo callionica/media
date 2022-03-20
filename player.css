@@ -172,6 +172,13 @@ body[data-image-count="many"] .item-title {
     padding-left: 4vh;
 }
 
+html {
+    scroll-snap-type: y proximity;
+}
+.item {
+    scroll-snap-align: start;
+}
+
 .category {
     font-size: 0.5rem;
     font-weight: normal;
