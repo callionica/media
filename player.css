@@ -172,12 +172,14 @@ body[data-image-count="many"] .item-title {
     padding-left: 4vh;
 }
 
+/* Slows things down too much
 html {
     scroll-snap-type: y proximity;
 }
 .item {
     scroll-snap-align: start;
 }
+*/
 
 .category {
     font-size: 0.5rem;
