@@ -436,6 +436,9 @@ function init() {
 		} else if (evt.key === "ArrowLeft") {
 			if (!evt.getModifierState("Shift")) {
 				video.currentTime -= 15.0;
+				if (evid.currentTime !== evid.currentTimeQuantized) {
+					evid.currentTime = evid.currentTimeQuantized;
+				}
 			} else {
 				video.currentTime = 0.0;
 			}
